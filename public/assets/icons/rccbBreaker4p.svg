@@ -1,40 +1,5 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!-- Created with Inkscape (http://www.inkscape.org/) -->
-
-<svg width="240" height="120" viewBox="0 0 240 120" version="1.1" id="svg1" sodipodi:docname="rccbBreaker4p.svg" inkscape:version="1.4 (e7c3feb1, 2024-10-09)"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:svg="http://www.w3.org/2000/svg">
-   <sodipodi:namedview id="namedview1" pagecolor="#505050" bordercolor="#eeeeee" borderopacity="1" inkscape:showpageshadow="0" inkscape:pageopacity="0" inkscape:pagecheckerboard="0" inkscape:deskcolor="#3d3d3d" inkscape:zoom="1.5980022" inkscape:cx="72.590636" inkscape:cy="-10.325392" inkscape:window-width="1352" inkscape:window-height="762" inkscape:window-x="88" inkscape:window-y="25" inkscape:window-maximized="0" inkscape:current-layer="svg1" showguides="true" />
-   <defs id="defs1" />
-   <metadata id="metadata1">
-      <info category="protections" duplicateTag="false" type="switch" width="240" height="120" tagType="breakers" name="RCCB Circuit Breaker 4P" description="RCCB Circuit Breaker 4P" marginH="0" marginV="0" />
-      <nodes id="0">
-         <node id="0" tag="1" direction="0" type="contact" dx="-90.0" dy="-60.0" />
-         <node id="1" tag="2" direction="2" type="contact" dx="-90.0" dy="60.0" />
-         <node id="2" tag="3" direction="0" type="contact" dx="-30.0" dy="-60.0" />
-         <node id="3" tag="4" direction="2" type="contact" dx="-30.0" dy="60.0" />
-         <node id="4" tag="5" direction="0" type="contact" dx="30.0" dy="-60.0" />
-         <node id="5" tag="6" direction="2" type="contact" dx="30.0" dy="60.0" />
-         <node id="6" tag="7" direction="0" type="contact" dx="90.0" dy="-60.0" />
-         <node id="7" tag="8" direction="2" type="contact" dx="90.0" dy="60.0" />
-      </nodes>
-      <frames id="0">
-         <frame id="0">
-            <pathFrame id="mainPath1" type="main" style="stroke" />
-         </frame>
-         <frame id="1">
-            <pathFrame id="mainPath2" display="none" type="main" style="stroke" />
-         </frame>
-      </frames>
-      <contacts>
-         <contact id="0" nodeId1="0" nodeId2="1" type="no" enableFrames="0,1" />
-         <contact id="1" nodeId1="2" nodeId2="3" type="no" enableFrames="0,1" />
-         <contact id="2" nodeId1="4" nodeId2="5" type="no" enableFrames="0,1" />
-         <contact id="3" nodeId1="6" nodeId2="7" type="no" enableFrames="0,1" />
-      </contacts>
-   </metadata>
-   <path id="mainPath1" style="display:inline;fill:none;stroke:#ffffff;stroke-width:2" d="m 177.39089,67.256424 -8.90711,2.375264 m 7.82563,-5.846104 1.91647,6.999998 M 202.49999,60 l -8.74133,2.506537 m -1.01204,-3.395342 -10.63181,6.823659 12.63227,0.152794 z m -75.35572,8.145229 -8.90711,2.375264 m 7.82563,-5.846104 1.91647,6.999998 M 142.5,60 l -8.74133,2.506537 m -1.01204,-3.395342 -10.63181,6.823659 12.63227,0.152794 z m -75.194734,8.145229 -8.907111,2.375264 m 7.825631,-5.846104 1.91647,6.999998 M 82.660995,60 l -8.74133,2.506537 m -1.01204,-3.395342 -10.631809,6.823659 12.632269,0.152794 z m -75.5167256,8.145229 -8.9071104,2.375264 m 7.8256304,-5.846104 1.91647,6.999998 M 22.499999,60 l -8.74133,2.506537 m -1.01204,-3.395342 -10.6318096,6.823659 12.6322696,0.152794 z m 12.303616,-18.161465 9.8995,-9.899495 m 0,9.899495 -9.8995,-9.899495 m 60.160996,9.899495 9.8995,-9.899495 m 0,9.899495 -9.8995,-9.899495 m 59.839009,9.899501 9.8995,-9.899495 m 0,9.899495 -9.8995,-9.899495 m 59.99999,9.89951 9.8995,-9.899495 m 0,9.899495 -9.8995,-9.899495 m -10.05025,4.949747 15,48.000007 v 36 m 0,-120.0000071 V 36.000002 M 135,35.999991 150,83.999996 V 120 M 150,-1.025e-5 V 35.999989 m -74.839009,-6e-6 15,48.000006 V 120 m 0,-120.000017 v 36 m -75.160996,0 15,48.000006 V 120 m 0,-120.000017 v 36 M 158.33493,60 h 5 m -13,0 h 5 m -13,0 h 5 m 51,0 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5 M 98.000001,60 H 103 m -12.999999,0 h 5 m -13,0 h 5 M 138,60 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5 M 98.000003,60 H 103 m -24.999995,0 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5" inkscape:label="mainPath1" />
-   <path id="mainPath2" display="none" style="display:none;fill:none;stroke:#ffffff;stroke-width:2" d="m 182.63103,60.826939 -9.21469,0.260672 m 8.9614,-3.887261 0.25329,7.253179 M 208.61999,60 l -9.08806,0.317361 m -0.16058,-3.539323 -11.96678,4.048902 12.22007,3.204278 z M 207.12,60 h 1.49999 m -86.10895,0.826939 -9.21469,0.260672 m 8.9614,-3.887261 0.25329,7.253179 M 148.5,60 l -9.08806,0.317361 m -0.16058,-3.539323 -11.96678,4.048902 12.22007,3.204278 z M 147.00001,60 H 148.5 m -85.98897,0.826939 -9.21469,0.260672 m 8.9614,-3.887261 0.25329,7.253179 M 88.49999,60 79.41193,60.317361 M 79.25135,56.778038 67.28457,60.82694 79.50464,64.031218 Z M 87,60 h 1.49999 m -85.98896,0.826939 -9.21469,0.260672 m 8.9614,-3.887261 0.25329,7.253179 M 28.49999,60 19.41193,60.317361 M 19.25135,56.778038 7.28457,60.82694 19.50464,64.031218 Z M 27,60 h 1.49999 m -3.449745,-28.949765 9.8995,9.899495 m 0,-9.899495 -9.8995,9.899495 m 60.160996,-9.899495 9.8995,9.899495 m 0,-9.899495 -9.8995,9.899495 m 59.839009,-9.899489 9.8995,9.899495 m 0,-9.899495 -9.8995,9.899495 m 59.99999,-9.89948 9.8995,9.899495 m 0,-9.899495 -9.8995,9.899495 m 1.94975,-4.949747 3,48 V 120 m 0,-119.9999966 V 36.000004 M 147,35.999991 l 3,48 V 119.99999 M 150,-9.75e-6 V 35.999991 m -62.839009,3e-6 3,48 V 120 m 0,-120.0000065 V 35.999994 m -63.160996,0 3,48 V 120 m 0,-120.0000065 V 35.999994 M 162.12,60 h 5 m -13,0 h 5 m -13,0 h 5 m 51,0 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5 M 103,60 h 5 m -13,0 h 5 m -13,0 h 5 m 51,0 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5 m -24.999995,0 h 5 m -13,0 h 5 m -13,0 h 5 M 59,60 h 5.000001 M 51,60 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5" inkscape:label="mainPath2" />
+<!-- Mashimurelay Clean-Room IEC 60617 Vector Symbol -->
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="120" viewBox="0 0 240 120">
+  <path id="mainPath1" style="fill:none;stroke:#ffffff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" d="M 30 0 V 36 M 90 0 V 36 M 150 0 V 36 M 210 0 V 36 M 25 41 L 35 31 M 35 41 L 25 31 M 85 41 L 95 31 M 95 41 L 85 31 M 145 41 L 155 31 M 155 41 L 145 31 M 205 41 L 215 31 M 215 41 L 205 31 M 15 36 L 30 84 V 120 M 75 36 L 90 84 V 120 M 135 36 L 150 84 V 120 M 195 36 L 210 84 V 120 M 12.5 59 L 2 66 H 14.5 Z M 73 59 L 62.5 66 H 75 Z M 132.5 59 L 122 66 H 134.5 Z M 192.5 59 L 182 66 H 194.5 Z M 22.5 60 L 14 62.5 M 22 60 H 27 M 30 60 H 35 M 38 60 H 43 M 46 60 H 51 M 54 60 H 59 M 62 60 H 67 M 70 60 H 75 M 82.5 60 L 74 62.5 M 78 60 H 83 M 82 60 H 87 M 90 60 H 95 M 98 60 H 103 M 98 60 H 103 M 106 60 H 111 M 114 60 H 119 M 122 60 H 127 M 130 60 H 135 M 142.5 60 L 134 62.5 M 138 60 H 143 M 142.5 60 H 147.5 M 150.5 60 H 155.5 M 158.5 60 H 163.5 M 158.5 60 H 163.5 M 166.5 60 H 171.5 M 174.5 60 H 179.5 M 182.5 60 H 187.5 M 190.5 60 H 195.5 M 202.5 60 L 194 62.5 M 198.5 60 H 203.5 M -3.5 64 L -2 71 M 56.5 64 L 58.5 71 M 116.5 64 L 118 71 M 176.5 64 L 178 71 M -2.5 67.5 L -11.5 69.5 M 57.5 67.5 L 48.5 69.5 M 117.5 67.5 L 108.5 69.5 M 177.5 67.5 L 168.5 69.5" />
+  <path id="mainPath2" display="none" style="display:none;fill:none;stroke:#ffffff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" d="M 30 0 V 36 M 90 0 V 36 M 150 0 V 36 M 210 0 V 36 M 25 31 L 35 41 M 35 31 L 25 41 M 85 31 L 95 41 M 95 31 L 85 41 M 145 31 L 155 41 M 155 31 L 145 41 M 205 31 L 215 41 M 215 31 L 205 41 M 27 36 L 30 84 V 120 M 87 36 L 90 84 V 120 M 147 36 L 150 84 V 120 M 207 36 L 210 84 V 120 M 2.5 57 V 64.5 M 19.5 57 L 7.5 61 L 19.5 64 Z M 62.5 57 V 64.5 M 79.5 57 L 67.5 61 L 79.5 64 Z M 122.5 57 V 64.5 M 139.5 57 L 127.5 61 L 139.5 64 Z M 182.5 57 V 64.5 M 199.5 57 L 187.5 61 L 199.5 64 Z M 28.5 60 L 19.5 60.5 M 27 60 H 28.5 M 27 60 H 32 M 35 60 H 40 M 43 60 H 48 M 51 60 H 56 M 59 60 H 64 M 67 60 H 72 M 75 60 H 80 M 88.5 60 L 79.5 60.5 M 83 60 H 88 M 87 60 H 88.5 M 87 60 H 92 M 95 60 H 100 M 103 60 H 108 M 103 60 H 108 M 111 60 H 116 M 119 60 H 124 M 127 60 H 132 M 135 60 H 140 M 148.5 60 L 139.5 60.5 M 143 60 H 148 M 146 60 H 151 M 147 60 H 148.5 M 154 60 H 159 M 162 60 H 167 M 162 60 H 167 M 170 60 H 175 M 178 60 H 183 M 186 60 H 191 M 194 60 H 199 M 208.5 60 L 199.5 60.5 M 202 60 H 207 M 207 60 H 208.5 M 2.5 61 H -6.5 M 62.5 61 H 53.5 M 122.5 61 H 113.5 M 182.5 61 H 173.5" />
 </svg>

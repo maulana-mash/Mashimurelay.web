@@ -1,37 +1,5 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!-- Created with Inkscape (http://www.inkscape.org/) -->
-
-<svg width="180" height="120" viewBox="0 0 180 120" version="1.1" id="svg1" sodipodi:docname="breaker3p.svg" inkscape:version="1.4 (e7c3feb1, 2024-10-09)"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:svg="http://www.w3.org/2000/svg">
-   <sodipodi:namedview id="namedview1" pagecolor="#505050" bordercolor="#eeeeee" borderopacity="1" inkscape:showpageshadow="0" inkscape:pageopacity="0" inkscape:pagecheckerboard="0" inkscape:deskcolor="#3d3d3d" inkscape:zoom="2.8169004" inkscape:cx="67.450024" inkscape:cy="44.907516" inkscape:window-width="1352" inkscape:window-height="762" inkscape:window-x="88" inkscape:window-y="25" inkscape:window-maximized="0" inkscape:current-layer="svg1" showguides="true" />
-   <defs id="defs1" />
-   <metadata id="metadata1">
-      <info category="protections" duplicateTag="false" type="switch" width="180" height="120" tagType="breakers" name="Circuit Breaker 3P" description="Circuit Breaker 3P" marginH="0" marginV="0" />
-      <nodes id="0">
-         <node id="0" tag="1" direction="0" type="contact" dx="-60.0" dy="-60.0" />
-         <node id="1" tag="2" direction="2" type="contact" dx="-60.0" dy="60.0" />
-         <node id="2" tag="3" direction="0" type="contact" dx="0.0" dy="-60.0" />
-         <node id="3" tag="4" direction="2" type="contact" dx="0.0" dy="60.0" />
-         <node id="4" tag="5" direction="0" type="contact" dx="60.0" dy="-60.0" />
-         <node id="5" tag="6" direction="2" type="contact" dx="60.0" dy="60.0" />
-      </nodes>
-      <frames id="0">
-         <frame id="0">
-            <pathFrame id="mainPath1" type="main" style="stroke" />
-         </frame>
-         <frame id="1">
-            <pathFrame id="mainPath2" display="none" type="main" style="stroke" />
-         </frame>
-      </frames>
-      <contacts>
-         <contact id="0" nodeId1="0" nodeId2="1" type="no" enableFrames="0,1" />
-         <contact id="1" nodeId1="2" nodeId2="3" type="no" enableFrames="0,1" />
-         <contact id="2" nodeId1="4" nodeId2="5" type="no" enableFrames="0,1" />
-      </contacts>
-   </metadata>
-   <path id="mainPath1" style="fill:none;stroke:#ffffff;stroke-width:2" d="m 25.050245,40.949742 9.8995,-9.899496 m 0,9.899496 -9.8995,-9.899496 m 60.160996,9.899496 9.8995,-9.899496 m 0,9.899496 -9.8995,-9.899496 m 59.839009,8.979539 9.8995,-9.899495 m 0,9.899495 -9.8995,-9.899495 M 90.160991,-6.5e-6 V 35.999994 M 135,35.999991 150,83.999997 V 120 M 150,-9.75e-6 V 35.99999 m -74.839009,-6e-6 15,48.000006 V 120 m -75.160996,-84.000016 15,48.000006 V 120 m 0,-120.0000165 V 35.999983 M 98.000001,60 H 103 m -12.999999,0 h 5 m -13,0 h 5 M 138,60 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5 M 98.000003,60 H 103 m -24.999995,0 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5" inkscape:label="mainPath1" />
-   <path id="mainPath2" display="none" style="display:none;fill:none;stroke:#ffffff;stroke-width:2;stroke-dasharray:none" d="m 25.050245,31.050246 9.8995,9.899496 m 0,-9.899496 -9.8995,9.899496 m 60.160996,-9.899496 9.8995,9.899496 m 0,-9.899496 -9.8995,9.899496 M 147,35.999991 l 3,48 V 119.99999 M 150,-9.75e-6 V 35.999991 m -62.839009,3e-6 3,48 V 120 m 0,-120.0000065 V 35.999994 m -63.160996,0 3,48 V 120 m 0,-120.0000065 V 0 35.999994 M 103,60 h 5 m -13,0 h 5 m -13,0 h 5 m 51,0 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5 m -24.999995,0 h 5 m -13,0 h 5 m -13,0 h 5 M 59,60 h 5.000001 M 51,60 h 5 m -13,0 h 5 m -13,0 h 5 m -13,0 h 5 m 113.05025,-29.86971 9.8995,9.899495 m 0,-9.899495 -9.8995,9.899495" inkscape:label="mainPath2" sodipodi:nodetypes="cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" />
+<!-- Mashimurelay Clean-Room IEC 60617 Vector Symbol -->
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="120" viewBox="0 0 180 120">
+  <path id="mainPath1" style="fill:none;stroke:#ffffff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" d="M 30 0 V 36 M 90 0 V 36 M 150 0 V 36 M 145 40 L 155 30 M 155 40 L 145 30 M 25 41 L 35 31 M 35 41 L 25 31 M 85 41 L 95 31 M 95 41 L 85 31 M 15 36 L 30 84 V 120 M 75 36 L 90 84 V 120 M 135 36 L 150 84 V 120 M 22 60 H 27 M 30 60 H 35 M 38 60 H 43 M 46 60 H 51 M 54 60 H 59 M 62 60 H 67 M 70 60 H 75 M 78 60 H 83 M 82 60 H 87 M 90 60 H 95 M 98 60 H 103 M 98 60 H 103 M 106 60 H 111 M 114 60 H 119 M 122 60 H 127 M 130 60 H 135 M 138 60 H 143" />
+  <path id="mainPath2" display="none" style="display:none;fill:none;stroke:#ffffff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" d="M 30 0 V 36 M 90 0 V 36 M 150 0 V 36 M 145 30 L 155 40 M 155 30 L 145 40 M 25 31 L 35 41 M 35 31 L 25 41 M 85 31 L 95 41 M 95 31 L 85 41 M 27 36 L 30 84 V 120 M 87 36 L 90 84 V 120 M 147 36 L 150 84 V 120 M 27 60 H 32 M 35 60 H 40 M 43 60 H 48 M 51 60 H 56 M 59 60 H 64 M 67 60 H 72 M 75 60 H 80 M 83 60 H 88 M 87 60 H 92 M 95 60 H 100 M 103 60 H 108 M 103 60 H 108 M 111 60 H 116 M 119 60 H 124 M 127 60 H 132 M 135 60 H 140 M 143 60 H 148" />
 </svg>
