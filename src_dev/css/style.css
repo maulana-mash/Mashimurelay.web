@@ -7851,3 +7851,160 @@ html[data-grid="none"] #gridPattern .grid-pattern-dot,
 html[data-grid="none"] #gridPattern .grid-pattern-line {
   display: none;
 }
+
+/* =========================================================================
+   Windows Classroom Hotspot Firewall Whitelist Banner (Dark CAD & Light Paper)
+   ========================================================================= */
+.classroom-fw-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  margin-bottom: 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: rgba(15, 23, 42, 0.45);
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.classroom-fw-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.classroom-fw-texts {
+  min-width: 0;
+  flex: 1;
+}
+
+.classroom-fw-title {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+
+.classroom-fw-detail {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.classroom-fw-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.classroom-fw-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.classroom-fw-banner.is-blocked {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.45);
+}
+
+.classroom-fw-banner.is-blocked #classroomFirewallIcon,
+.classroom-fw-banner.is-blocked .classroom-fw-title {
+  color: #f87171;
+}
+
+.classroom-fw-banner.is-blocked .classroom-fw-btn {
+  background: #dc2626;
+  border-color: #ef4444;
+  color: #ffffff;
+}
+
+.classroom-fw-banner.is-blocked .classroom-fw-btn:hover {
+  background: #b91c1c;
+}
+
+.classroom-fw-banner.is-warning {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.42);
+}
+
+.classroom-fw-banner.is-warning #classroomFirewallIcon,
+.classroom-fw-banner.is-warning .classroom-fw-title {
+  color: #fbbf24;
+}
+
+.classroom-fw-banner.is-warning .classroom-fw-btn {
+  background: #2563eb;
+  border-color: #3b82f6;
+  color: #ffffff;
+}
+
+.classroom-fw-banner.is-warning .classroom-fw-btn:hover {
+  background: #1d4ed8;
+}
+
+.classroom-fw-banner.is-allowed {
+  background: rgba(16, 185, 129, 0.10);
+  border-color: rgba(16, 185, 129, 0.35);
+  padding: 7px 12px;
+}
+
+.classroom-fw-banner.is-allowed #classroomFirewallIcon,
+.classroom-fw-banner.is-allowed .classroom-fw-title {
+  color: #34d399;
+}
+
+html[data-theme="light"] .classroom-fw-banner.is-blocked {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
+html[data-theme="light"] .classroom-fw-banner.is-blocked #classroomFirewallIcon,
+html[data-theme="light"] .classroom-fw-banner.is-blocked .classroom-fw-title {
+  color: #dc2626;
+}
+
+html[data-theme="light"] .classroom-fw-banner.is-blocked .classroom-fw-detail {
+  color: #7f1d1d;
+}
+
+html[data-theme="light"] .classroom-fw-banner.is-warning {
+  background: #fffbeb;
+  border-color: #fcd34d;
+}
+
+html[data-theme="light"] .classroom-fw-banner.is-warning #classroomFirewallIcon,
+html[data-theme="light"] .classroom-fw-banner.is-warning .classroom-fw-title {
+  color: #b45309;
+}
+
+html[data-theme="light"] .classroom-fw-banner.is-warning .classroom-fw-detail {
+  color: #78350f;
+}
+
+html[data-theme="light"] .classroom-fw-banner.is-allowed {
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+}
+
+html[data-theme="light"] .classroom-fw-banner.is-allowed #classroomFirewallIcon,
+html[data-theme="light"] .classroom-fw-banner.is-allowed .classroom-fw-title {
+  color: #047857;
+}
+
+html[data-theme="light"] .classroom-fw-banner.is-allowed .classroom-fw-detail {
+  color: #065f46;
+}

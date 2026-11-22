@@ -1790,6 +1790,74 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Classroom Hotspot Server Handlers
+  const classroomFirewallBanner = document.getElementById('classroomFirewallBanner');
+  const classroomFirewallTitle = document.getElementById('classroomFirewallTitle');
+  const classroomFirewallDetail = document.getElementById('classroomFirewallDetail');
+  const btnAllowClassroomFirewall = document.getElementById('btnAllowClassroomFirewall');
+  const btnAllowClassroomFirewallText = document.getElementById('btnAllowClassroomFirewallText');
+
+  function renderClassroomFirewallState(fw) {
+    if (!classroomFirewallBanner) return;
+    if (!fw || !fw.status || fw.status === 'unknown') {
+      classroomFirewallBanner.style.display = 'none';
+      return;
+    }
+
+    classroomFirewallBanner.style.display = 'flex';
+    classroomFirewallBanner.classList.remove('is-allowed', 'is-warning', 'is-blocked');
+
+    if (fw.status === 'allowed') {
+      classroomFirewallBanner.classList.add('is-allowed');
+      if (classroomFirewallTitle) classroomFirewallTitle.textContent = 'Windows Firewall: Terbuka (Whitelist Aktif)';
+      if (classroomFirewallDetail) classroomFirewallDetail.textContent = fw.detail || 'HP siswa siap terhubung ke Hotspot Guru.';
+      if (btnAllowClassroomFirewall) btnAllowClassroomFirewall.style.display = 'none';
+    } else if (fw.status === 'blocked') {
+      classroomFirewallBanner.classList.add('is-blocked');
+      if (classroomFirewallTitle) classroomFirewallTitle.textContent = 'Akses Hotspot Terblokir Windows Firewall';
+      if (classroomFirewallDetail) classroomFirewallDetail.textContent = fw.detail || 'Kemungkinan sebelumnya menekan Batal. Klik tombol di kanan untuk membuka blokir.';
+      if (btnAllowClassroomFirewall) btnAllowClassroomFirewall.style.display = 'inline-flex';
+      if (btnAllowClassroomFirewallText) btnAllowClassroomFirewallText.textContent = 'Buka Blokir Firewall';
+    } else {
+      classroomFirewallBanner.classList.add('is-warning');
+      if (classroomFirewallTitle) classroomFirewallTitle.textContent = 'Whitelist Windows Firewall Belum Lengkap';
+      if (classroomFirewallDetail) classroomFirewallDetail.textContent = fw.detail || 'Pasang whitelist (Private & Public) agar HP siswa bebas hambatan.';
+      if (btnAllowClassroomFirewall) btnAllowClassroomFirewall.style.display = 'inline-flex';
+      if (btnAllowClassroomFirewallText) btnAllowClassroomFirewallText.textContent = 'Pasang Whitelist';
+    }
+  }
+
+  async function refreshClassroomFirewallBanner() {
+    if (!classroomFirewallBanner || !window.TauriBridge || !window.TauriBridge.isTauri()) return;
+    try {
+      const fw = await window.TauriBridge.checkClassroomFirewallStatus();
+      renderClassroomFirewallState(fw);
+    } catch (_) {}
+  }
+
+  if (btnAllowClassroomFirewall) {
+    btnAllowClassroomFirewall.addEventListener('click', async () => {
+      if (!window.TauriBridge || !window.TauriBridge.isTauri()) return;
+      btnAllowClassroomFirewall.disabled = true;
+      const prevLabel = btnAllowClassroomFirewallText ? btnAllowClassroomFirewallText.textContent : '';
+      if (btnAllowClassroomFirewallText) btnAllowClassroomFirewallText.textContent = 'Memproses...';
+      try {
+        const fw = await window.TauriBridge.allowClassroomFirewall();
+        renderClassroomFirewallState(fw);
+        if (fw && fw.status === 'allowed') {
+          showToast('Whitelist Windows Firewall aktif! HP siswa siap terhubung.', true);
+        } else {
+          showToast('Status Firewall diperbarui. Pastikan memilih Yes saat izin Administrator muncul.');
+        }
+      } catch (err) {
+        const msg = typeof err === 'string' ? err : (err && err.message ? err.message : 'Gagal mengatur Firewall');
+        showToast(msg);
+        if (btnAllowClassroomFirewallText && prevLabel) btnAllowClassroomFirewallText.textContent = prevLabel;
+      } finally {
+        btnAllowClassroomFirewall.disabled = false;
+      }
+    });
+  }
+
   async function openClassroomHotspotModal(customName, teacherClass, teacherSchool) {
     if (!modalClassroomHotspot) return;
 
@@ -1884,6 +1952,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       updateClassroomModeUI(false);
+      refreshClassroomFirewallBanner();
 
       // Start live poll of submissions
       if (classroomPollInterval) clearInterval(classroomPollInterval);

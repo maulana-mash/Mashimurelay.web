@@ -142,6 +142,21 @@ const TauriBridge = {
     }
   },
 
+  async checkClassroomFirewallStatus() {
+    if (!this.isTauri()) return null;
+    try {
+      return await this.invoke('check_classroom_firewall_status');
+    } catch (e) {
+      console.error('Tauri checkClassroomFirewallStatus error:', e);
+      return null;
+    }
+  },
+
+  async allowClassroomFirewall() {
+    if (!this.isTauri()) return null;
+    return await this.invoke('allow_classroom_firewall');
+  },
+
   async forceCloseApp() {
     if (!this.isTauri()) return null;
     try {

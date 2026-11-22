@@ -776,6 +776,23 @@
           </div>
         </div>
 
+        <!-- Windows Firewall Whitelist Status Banner (Tauri Desktop Only, Pure SVG) -->
+        <div id="classroomFirewallBanner" class="classroom-fw-banner" style="display: none;">
+          <div class="classroom-fw-info">
+            <svg id="classroomFirewallIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            <div class="classroom-fw-texts">
+              <div id="classroomFirewallTitle" class="classroom-fw-title">Memeriksa Windows Firewall...</div>
+              <div id="classroomFirewallDetail" class="classroom-fw-detail"></div>
+            </div>
+          </div>
+          <button type="button" id="btnAllowClassroomFirewall" class="classroom-fw-btn" style="display: none;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>
+            <span id="btnAllowClassroomFirewallText">Izinkan Akses Firewall</span>
+          </button>
+        </div>
+
         <!-- Mode Switcher: Praktikum vs Ujian (Offline Hybrid) -->
         <div class="hotspot-box" style="background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">

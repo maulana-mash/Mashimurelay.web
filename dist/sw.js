@@ -1,5 +1,5 @@
 // Mashimurelay Offline Service Worker
-const CACHE_NAME = 'mashimurelay-cache-v361-theme-grid';
+const CACHE_NAME = 'mashimurelay-cache-v362-firewall-whitelist';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
