@@ -1373,6 +1373,25 @@ class MashimurelayEngine {
 }
 
 function getPotentialColor(pot) {
+  const isLight = (typeof document !== 'undefined' && document.documentElement &&
+    document.documentElement.getAttribute('data-theme') === 'light');
+  if (isLight) {
+    if (pot === Potential.NONE) return '#475569';
+    if (pot === Potential.AC_SHORT) return '#ea580c';
+    if (pot === Potential.DC_OVERHEAT) return '#dc2626';
+    if (pot === Potential.L1) return '#dc2626';
+    if (pot === Potential.L2) return '#d97706';
+    if (pot === Potential.L3) return '#059669';
+    if (pot === Potential.N) return '#2563eb';
+    if (pot === Potential.PE) return '#15803d';
+    if (pot === Potential.GND) return '#047857';
+    if (pot === Potential.DC_P) return '#b91c1c';
+    if (pot === Potential.DC_N) return '#0284c7';
+    if (((pot & Potential.DC_P) !== 0) && ((pot & Potential.DC_N) !== 0)) return '#dc2626';
+    if ((pot & (Potential.L1 | Potential.L2 | Potential.L3)) !== 0 &&
+        (pot & (Potential.N | Potential.PE | Potential.GND)) !== 0) return '#ea580c';
+    return '#ea580c';
+  }
   if (pot === Potential.NONE) return '#6b7280';
   if (pot === Potential.AC_SHORT) return '#f97316';
   if (pot === Potential.DC_OVERHEAT) return '#dc2626';

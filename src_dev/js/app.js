@@ -81,6 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnUndo = document.getElementById('btnUndo');
   const btnRedo = document.getElementById('btnRedo');
   const btnFullscreen = document.getElementById('btnFullscreen');
+  const btnToggleTheme = document.getElementById('btnToggleTheme');
+  const settingThemeGroup = document.getElementById('settingThemeGroup');
   const btnToggleSound = document.getElementById('btnToggleSound');
   const btnAutoSaveToggle = document.getElementById('btnAutoSaveToggle');
   const autoSaveStatusText = document.getElementById('autoSaveStatusText');
@@ -1943,21 +1945,21 @@ document.addEventListener('DOMContentLoaded', () => {
     lastSubmissionsRenderHash = currentHash;
 
     classroomSubmissionsTbody.innerHTML = sorted.map((sub, idx) => `
-      <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); background: ${idx === 0 ? 'rgba(16, 185, 129, 0.08)' : 'transparent'};">
+      <tr style="border-bottom: 1px solid var(--border-color); background: ${idx === 0 ? 'rgba(16, 185, 129, 0.08)' : 'transparent'};">
         <td style="padding: 7px 10px; text-align: center;">
           ${idx === 0 
-            ? '<span style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.45); padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; white-space: nowrap;">#1 Tercepat</span>'
-            : `<span style="color: #94a3b8; font-size: 11px; font-family: monospace; font-weight: 600;">#${idx + 1}</span>`
+            ? '<span style="background: rgba(16, 185, 129, 0.16); color: var(--accent-success); border: 1px solid rgba(16, 185, 129, 0.45); padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; white-space: nowrap;">#1 Tercepat</span>'
+            : `<span style="color: var(--text-muted); font-size: 11px; font-family: monospace; font-weight: 600;">#${idx + 1}</span>`
           }
         </td>
-        <td style="padding: 7px 10px; text-align: center; font-weight: 700; color: #38bdf8; font-family: monospace;">${escapeHtml(sub.presensi_no || '-')}</td>
-        <td style="padding: 7px 10px; font-weight: 600; color: #fff;">
+        <td style="padding: 7px 10px; text-align: center; font-weight: 700; color: var(--accent-primary); font-family: monospace;">${escapeHtml(sub.presensi_no || '-')}</td>
+        <td style="padding: 7px 10px; font-weight: 600; color: var(--text-primary);">
           ${escapeHtml(sub.student_name || 'Siswa')}
-          ${sub.revision && sub.revision > 1 ? `<span style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; margin-left: 6px; vertical-align: middle;">Revisi ${sub.revision}</span>` : ''}
+          ${sub.revision && sub.revision > 1 ? `<span style="background: rgba(245, 158, 11, 0.18); color: var(--accent-warning); border: 1px solid rgba(245, 158, 11, 0.4); padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; margin-left: 6px; vertical-align: middle;">Revisi ${sub.revision}</span>` : ''}
         </td>
         <td style="padding: 7px 10px; text-align: center; color: var(--text-secondary); font-size: 11px; font-family: monospace;">${escapeHtml(sub.timestamp || '-')}</td>
         <td style="padding: 7px 10px; text-align: center;">
-          <button type="button" class="btn btn-sm btn-load-student-task" data-sub-idx="${idx}" style="padding: 3px 8px; font-size: 11px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; cursor: pointer;">
+          <button type="button" class="btn btn-sm btn-load-student-task" data-sub-idx="${idx}" style="padding: 3px 8px; font-size: 11px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: var(--accent-primary); cursor: pointer;">
             Buka di Kanvas
           </button>
         </td>
@@ -2027,12 +2029,12 @@ document.addEventListener('DOMContentLoaded', () => {
         btnClassroomModeUjian.style.background = '#ef4444';
         btnClassroomModeUjian.style.color = '#ffffff';
         btnClassroomModePraktikum.style.background = 'transparent';
-        btnClassroomModePraktikum.style.color = '#94a3b8';
+        btnClassroomModePraktikum.style.color = 'var(--text-secondary)';
       } else {
         btnClassroomModePraktikum.style.background = '#3b82f6';
         btnClassroomModePraktikum.style.color = '#ffffff';
         btnClassroomModeUjian.style.background = 'transparent';
-        btnClassroomModeUjian.style.color = '#94a3b8';
+        btnClassroomModeUjian.style.color = 'var(--text-secondary)';
       }
     }
     if (classroomModeDescText) {
@@ -2145,9 +2147,56 @@ document.addEventListener('DOMContentLoaded', () => {
       if (gridPattern) {
         gridPattern.setAttribute('width', newGrid);
         gridPattern.setAttribute('height', newGrid);
+        const dotEl = gridPattern.querySelector('.grid-pattern-dot');
+        if (dotEl) {
+          dotEl.setAttribute('cx', String(newGrid / 2));
+          dotEl.setAttribute('cy', String(newGrid / 2));
+        }
+        const lineEl = gridPattern.querySelector('.grid-pattern-line');
+        if (lineEl) {
+          lineEl.setAttribute('d', `M ${newGrid} 0 L 0 0 0 ${newGrid}`);
+        }
       }
       canvas.render();
       showToast(`Ukuran grid disetel ke ${newGrid}px`);
+    });
+  }
+
+  // Canvas Grid Style Controller ('both' | 'dots' | 'lines' | 'none')
+  const GRID_STYLE_STORAGE_KEY = 'mashimurelay_grid_style';
+  const VALID_GRID_STYLES = ['both', 'dots', 'lines', 'none'];
+  const GRID_STYLE_LABELS = {
+    both: 'Kombinasi',
+    dots: 'Titik',
+    lines: 'Garis',
+    none: 'Polos'
+  };
+  const settingGridStyleGroup = document.getElementById('settingGridStyleGroup');
+
+  function applyGridStyle(styleId, notify = false) {
+    const next = VALID_GRID_STYLES.includes(styleId) ? styleId : 'both';
+    document.documentElement.setAttribute('data-grid', next);
+    try { localStorage.setItem(GRID_STYLE_STORAGE_KEY, next); } catch (_) {}
+    if (settingGridStyleGroup) {
+      settingGridStyleGroup.querySelectorAll('[data-grid-opt]').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-grid-opt') === next);
+      });
+    }
+    if (notify) {
+      showToast('Grid Kanvas: ' + (GRID_STYLE_LABELS[next] || 'Kombinasi'), true);
+    }
+  }
+
+  const initialGridStyle = (() => {
+    try { return localStorage.getItem(GRID_STYLE_STORAGE_KEY) || 'both'; } catch (_) { return 'both'; }
+  })();
+  applyGridStyle(initialGridStyle, false);
+
+  if (settingGridStyleGroup) {
+    settingGridStyleGroup.querySelectorAll('[data-grid-opt]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        applyGridStyle(btn.getAttribute('data-grid-opt'), true);
+      });
     });
   }
 
@@ -3993,8 +4042,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const isSim = canvas && canvas.isSimulating;
 
       inspectorContent.innerHTML = `
-        <div class="prop-group" style="text-align: center; padding: 12px 6px; background: rgba(59, 130, 246, 0.08); border-radius: 8px; border: 1px dashed rgba(59, 130, 246, 0.3); margin-bottom: 16px;">
-          <div style="font-size: 14px; font-weight: 700; color: #fff;">${count} Komponen Terpilih</div>
+        <div class="prop-group" style="text-align: center; padding: 12px 6px; background: rgba(59, 130, 246, 0.08); border-radius: 8px; border: 1px dashed rgba(59, 130, 246, 0.35); margin-bottom: 16px;">
+          <div style="font-size: 14px; font-weight: 700; color: var(--text-primary);">${count} Komponen Terpilih</div>
           <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">
             ${isGrouped ? 'Tergabung dalam satu grup' : 'Multi-Selection Aktif'}
           </div>
@@ -4012,14 +4061,14 @@ document.addEventListener('DOMContentLoaded', () => {
             <button id="btnMultiRotate" class="btn btn-sm" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;" ${isSim ? 'disabled' : ''}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg> Putar Semua (R)
             </button>
-            <button id="btnMultiLock" class="btn btn-sm" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; ${allLocked ? 'background: rgba(16, 185, 129, 0.15); border-color: #10b981; color: #34d399;' : ''}" ${isSim ? 'disabled' : ''}>
+            <button id="btnMultiLock" class="btn btn-sm" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; ${allLocked ? 'background: rgba(16, 185, 129, 0.15); border-color: #10b981; color: var(--accent-success);' : ''}" ${isSim ? 'disabled' : ''}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> ${allLocked ? 'Buka Kunci Posisi Semua (Ctrl+L)' : 'Kunci Posisi Semua (Ctrl+L)'}
             </button>
             <button id="btnMultiGroup" class="btn btn-sm btn-primary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;" ${isSim ? 'disabled' : ''}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg> Gabungkan Grup (Ctrl+G)
             </button>
             ${isGrouped || elements.some(e => !!e.groupId) ? `
-            <button id="btnMultiUngroup" class="btn btn-sm" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; color: #f87171; border-color: rgba(248, 113, 113, 0.4);" ${isSim ? 'disabled' : ''}>
+            <button id="btnMultiUngroup" class="btn btn-sm" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--accent-danger); border-color: rgba(239, 68, 68, 0.45);" ${isSim ? 'disabled' : ''}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg> Pisahkan Grup (Ctrl+Shift+G)
             </button>` : ''}
             <button id="btnMultiDelete" class="btn btn-sm btn-danger" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 4px;" ${isSim ? 'disabled' : ''}>
@@ -4033,8 +4082,8 @@ document.addEventListener('DOMContentLoaded', () => {
           <div style="max-height: 140px; overflow-y: auto; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 8px; font-size: 11px;">
             ${elements.map(el => {
               const comp = COMPONENTS_DATA[el.svgData] || {};
-              return `<div style="display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                <span style="color: #93c5fd; font-weight: 600;">${el.tag || 'Tanpa Tag'}</span>
+              return `<div style="display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid var(--border-color);">
+                <span style="color: var(--accent-primary); font-weight: 600;">${el.tag || 'Tanpa Tag'}</span>
                 <span style="color: var(--text-muted);">${comp.name || el.svgData}</span>
               </div>`;
             }).join('')}
@@ -4716,6 +4765,82 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Sound Engine Mute Toggle & UI
+  // =========================================================================
+  // THEME SYSTEM CONTROLLER ('dark' | 'light')
+  // =========================================================================
+  const THEME_STORAGE_KEY = 'mashimurelay_theme';
+  const VALID_THEMES = ['dark', 'light'];
+  const THEME_LABELS = {
+    dark: 'Dark CAD',
+    light: 'Light Paper'
+  };
+  const THEME_META_COLORS = {
+    dark: '#1a1a24',
+    light: '#ffffff'
+  };
+
+  function updateThemeControlsUI(themeId) {
+    const isLight = themeId === 'light';
+    if (btnToggleTheme) {
+      btnToggleTheme.innerHTML = isLight
+        ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>'
+        : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>';
+      btnToggleTheme.title = isLight
+        ? 'Tema Aktif: Light Paper — Klik untuk Dark CAD'
+        : 'Tema Aktif: Dark CAD — Klik untuk Light Paper';
+    }
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) metaTheme.setAttribute('content', THEME_META_COLORS[themeId] || '#1a1a24');
+    if (settingThemeGroup) {
+      settingThemeGroup.querySelectorAll('.theme-opt-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-theme-opt') === themeId);
+      });
+    }
+  }
+
+  function applyTheme(themeId, notify = false) {
+    const next = VALID_THEMES.includes(themeId) ? themeId : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem(THEME_STORAGE_KEY, next); } catch (_) {}
+    updateThemeControlsUI(next);
+    if (typeof canvas !== 'undefined' && canvas) {
+      canvas.render();
+      if (canvas.isSimulating) {
+        canvas.updateSimulationVisuals();
+      }
+    }
+    if (notify) {
+      showToast('Tema: ' + (THEME_LABELS[next] || 'Dark CAD'), true);
+    }
+  }
+
+  window.MashimurelayTheme = {
+    get: () => document.documentElement.getAttribute('data-theme') || 'dark',
+    set: (id) => applyTheme(id, true),
+    toggle: () => applyTheme(window.MashimurelayTheme.get() === 'light' ? 'dark' : 'light', true),
+    isLight: () => window.MashimurelayTheme.get() === 'light'
+  };
+
+  // Initialize saved theme immediately
+  const initialTheme = (() => {
+    try { return localStorage.getItem(THEME_STORAGE_KEY) || 'dark'; } catch (_) { return 'dark'; }
+  })();
+  applyTheme(initialTheme, false);
+
+  if (btnToggleTheme) {
+    btnToggleTheme.addEventListener('click', () => {
+      window.MashimurelayTheme.toggle();
+    });
+  }
+  if (settingThemeGroup) {
+    settingThemeGroup.querySelectorAll('.theme-opt-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetTheme = btn.getAttribute('data-theme-opt');
+        if (targetTheme) applyTheme(targetTheme, true);
+      });
+    });
+  }
+
   function updateSoundButtonUI() {
     if (!btnToggleSound || !window.soundManager) return;
     const isMuted = window.soundManager.isMuted;

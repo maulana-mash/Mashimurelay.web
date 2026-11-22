@@ -67,7 +67,8 @@ const RESERVED_GLOBALS = [
   'generateCircuitPdfReport',
   'MashimurelayPdfReport',
   'ReviewTabManager',
-  'reviewTabManager'
+  'reviewTabManager',
+  'MashimurelayTheme'
 ];
 
 console.log('=================================================================');

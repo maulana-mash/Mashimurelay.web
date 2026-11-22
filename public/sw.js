@@ -1,5 +1,5 @@
 // Mashimurelay Offline Service Worker
-const CACHE_NAME = 'mashimurelay-cache-v360-cleanroom-iec';
+const CACHE_NAME = 'mashimurelay-cache-v361-theme-grid';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

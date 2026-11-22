@@ -2055,6 +2055,47 @@ class MashimurelayCanvas {
     }
   }
 
+  isLightTheme() {
+    return typeof document !== 'undefined' &&
+      document.documentElement &&
+      document.documentElement.getAttribute('data-theme') === 'light';
+  }
+
+  getIdleWireColor() {
+    return this.isLightTheme() ? '#475569' : '#6b7280';
+  }
+
+  getBaseStrokeColor() {
+    return this.isLightTheme() ? '#0f172a' : '#ffffff';
+  }
+
+  getTerminalRingColor() {
+    return this.isLightTheme() ? '#f8fafc' : '#121216';
+  }
+
+  adaptCustomTextColor(rawHex) {
+    if (!this.isLightTheme()) return rawHex;
+    const hex = (rawHex || '').trim().toLowerCase();
+    const lightMap = {
+      '#ffffff': '#0f172a',
+      '#f8fafc': '#0f172a',
+      '#f3f4f6': '#0f172a',
+      '#e2e8f0': '#1e293b',
+      '#cbd5e1': '#334155',
+      '#93c5fd': '#1d4ed8',
+      '#60a5fa': '#1d4ed8',
+      '#38bdf8': '#0369a1',
+      '#facc15': '#b45309',
+      '#fde047': '#b45309',
+      '#fbbf24': '#b45309',
+      '#34d399': '#047857',
+      '#4ade80': '#15803d',
+      '#a78bfa': '#6d28d9',
+      '#f87171': '#b91c1c'
+    };
+    return lightMap[hex] || rawHex;
+  }
+
   updateSimulationVisuals() {
     if (!this.simResult || !this.isSimulating) return;
 
@@ -2140,10 +2181,11 @@ class MashimurelayCanvas {
         path.classList.remove('wire-ac-short');
       }
 
+      const isLight = this.isLightTheme();
       if (pot !== Potential.NONE && this.enableWireGlow) {
         path.classList.add('wire-energized');
         if (!isOverheatedWire && !isAcShortWire) {
-          path.style.filter = `drop-shadow(0 0 6px ${color})`;
+          path.style.filter = isLight ? 'none' : `drop-shadow(0 0 6px ${color})`;
         }
       } else {
         path.classList.remove('wire-energized');
@@ -2155,6 +2197,9 @@ class MashimurelayCanvas {
 
     // Update terminal pins and junction dots in pinsGroup
     if (this.pinsGroup) {
+      const isLight = this.isLightTheme();
+      const ringColor = this.getTerminalRingColor();
+      const idleDotColor = isLight ? '#64748b' : '#94a3b8';
       const pinDots = this.pinsGroup.querySelectorAll('.terminal-dot');
       pinDots.forEach(dot => {
         const connIdsAttr = dot.getAttribute('data-conn-ids');
@@ -2175,10 +2220,10 @@ class MashimurelayCanvas {
         const color = getPotentialColor(activePot);
         if (activePot !== Potential.NONE) {
           dot.setAttribute('fill', color);
-          dot.setAttribute('stroke', '#121216');
+          dot.setAttribute('stroke', ringColor);
         } else {
-          dot.setAttribute('fill', '#94a3b8');
-          dot.setAttribute('stroke', '#121216');
+          dot.setAttribute('fill', idleDotColor);
+          dot.setAttribute('stroke', ringColor);
         }
       });
     }
@@ -2242,6 +2287,12 @@ class MashimurelayCanvas {
       const strokePath3 = group.querySelector('#strokePath3, [id="strokePath3"]');
       const indicatorGroup = group.querySelector('.motor-indicator-group');
 
+      const isLight = this.isLightTheme();
+      const baseInk = this.getBaseStrokeColor();
+      const motorMain = group.querySelector('#mainPath1, [id="mainPath1"], #mainPath');
+      const motorText = group.querySelector('#textPath1, [id="textPath1"]');
+      if (motorMain) motorMain.style.stroke = baseInk;
+
       // Determine arrowhead paths (motorDC has swapped IDs compared to other motor SVGs)
       const isMotorDC = (elem.svgData === 'motorDC');
       const isTwoSpeedMotor = (elem.svgData === 'motorDhalander' || elem.svgData === 'motorTwoSpeeds');
@@ -2257,6 +2308,7 @@ class MashimurelayCanvas {
         if (strokePath2) strokePath2.style.display = 'none';
         if (strokePath3) strokePath3.style.display = 'none';
         if (indicatorGroup) indicatorGroup.style.display = 'none';
+        if (motorText) motorText.style.fill = baseInk;
         group.classList.remove('motor-spin-cw', 'motor-spin-ccw', 'motor-spin-fast');
       } else if (frameIdx === 5) {
         // Dual-winding conflict / stall (red warning rotor body, stopped)
@@ -2271,6 +2323,7 @@ class MashimurelayCanvas {
         if (strokePath2) strokePath2.style.display = 'none';
         if (strokePath3) strokePath3.style.display = 'none';
         if (indicatorGroup) indicatorGroup.style.display = 'none';
+        if (motorText) motorText.style.fill = '#ffffff';
         group.classList.remove('motor-spin-cw', 'motor-spin-ccw', 'motor-spin-fast');
       } else if (frameIdx >= 1 && frameIdx <= 4) {
         const isCW = (frameIdx === 1 || frameIdx === 3);
@@ -2278,15 +2331,21 @@ class MashimurelayCanvas {
         if (fillPath1) {
           fillPath1.style.display = 'inline';
           fillPath1.style.fill = '#facc15';
-          fillPath1.style.opacity = '0.92';
+          fillPath1.style.opacity = isLight ? '0.95' : '0.92';
         }
+        if (motorText) motorText.style.fill = isLight ? '#0f172a' : '#ffffff';
         if (strokePath1) strokePath1.style.display = 'inline';
         if (cwArrow) cwArrow.style.display = isCW ? 'inline' : 'none';
         if (ccwArrow) ccwArrow.style.display = isCW ? 'none' : 'inline';
         if (isModeMotor) {
           // strokePath2 = 'Y' / '1' (frames 1-2), strokePath3 = 'Δ' / '2' (frames 3-4)
           if (strokePath2) strokePath2.style.display = isMode2 ? 'none' : 'inline';
-          if (strokePath3) strokePath3.style.display = isMode2 ? 'inline' : 'none';
+          if (strokePath3) {
+            strokePath3.style.display = isMode2 ? 'inline' : 'none';
+            if (elem.svgData === 'motorStarDelta') {
+              strokePath3.style.fill = isLight ? '#b91c1c' : '#ffffff';
+            }
+          }
         } else {
           if (strokePath2) strokePath2.style.display = 'inline';
           if (strokePath3) strokePath3.style.display = 'inline';
@@ -2299,6 +2358,7 @@ class MashimurelayCanvas {
       return;
     }
 
+    const baseStroke = this.getBaseStrokeColor();
     const p1 = group.querySelector('#mainPath1, [id="mainPath1"], #mainPath');
     const p2 = group.querySelector('#mainPath2, [id="mainPath2"]');
     const p3 = group.querySelector('#mainPath3, [id="mainPath3"]');
@@ -2314,7 +2374,7 @@ class MashimurelayCanvas {
             const pot = this.simResult.wirePotentials.get(c.id) || this.simResult.wirePotentials.get(parseInt(c.id)) || Potential.NONE;
             if (pot !== Potential.NONE) {
               let col = getPotentialColor(pot);
-              if (col !== '#6b7280') {
+              if (col !== '#6b7280' && col !== '#475569' && col !== '#94b8de') {
                 if (col === '#1e293b') col = '#38bdf8';
                 return col;
               }
@@ -2322,7 +2382,7 @@ class MashimurelayCanvas {
           }
         }
       }
-      return '#ffffff';
+      return baseStroke;
     };
 
     // Check if this component has multiple contact variant paths (e.g. contactNO, contactNC, contactCON)
@@ -2373,14 +2433,14 @@ class MashimurelayCanvas {
       const chosenPair = variantPairs[variantIdx] || variantPairs[0];
       const targetId = (frameIdx === 1) ? chosenPair.active : chosenPair.normal;
       const liveCol = getLiveColor();
-      const shouldColorLive = this.isSimulating && isContactClosed && (liveCol !== '#ffffff');
+      const shouldColorLive = this.isSimulating && isContactClosed && (liveCol !== baseStroke);
 
       allPathIds.forEach(pid => {
         const p = group.querySelector(`#${pid}, [id="${pid}"]`);
         if (p) {
           if (pid === targetId) {
             p.style.display = 'inline';
-            p.style.stroke = shouldColorLive ? liveCol : '#ffffff';
+            p.style.stroke = shouldColorLive ? liveCol : baseStroke;
             p.style.strokeWidth = shouldColorLive ? '2.8px' : '2px';
             p.removeAttribute('hidden');
           } else {
@@ -2401,18 +2461,18 @@ class MashimurelayCanvas {
 
       if (p1) {
         p1.style.display = frameIdx === 0 ? 'inline' : 'none';
-        p1.style.stroke = (this.isSimulating && frameIdx === 0 && p1Closed && liveCol !== '#ffffff') ? liveCol : '#ffffff';
-        p1.style.strokeWidth = (this.isSimulating && frameIdx === 0 && p1Closed && liveCol !== '#ffffff') ? '2.8px' : '2px';
+        p1.style.stroke = (this.isSimulating && frameIdx === 0 && p1Closed && liveCol !== baseStroke) ? liveCol : baseStroke;
+        p1.style.strokeWidth = (this.isSimulating && frameIdx === 0 && p1Closed && liveCol !== baseStroke) ? '2.8px' : '2px';
       }
       if (p2) {
         p2.style.display = frameIdx === 1 ? 'inline' : 'none';
-        p2.style.stroke = (this.isSimulating && frameIdx === 1 && p2Closed && liveCol !== '#ffffff') ? liveCol : '#ffffff';
-        p2.style.strokeWidth = (this.isSimulating && frameIdx === 1 && p2Closed && liveCol !== '#ffffff') ? '2.8px' : '2px';
+        p2.style.stroke = (this.isSimulating && frameIdx === 1 && p2Closed && liveCol !== baseStroke) ? liveCol : baseStroke;
+        p2.style.strokeWidth = (this.isSimulating && frameIdx === 1 && p2Closed && liveCol !== baseStroke) ? '2.8px' : '2px';
       }
       if (p3) {
         p3.style.display = frameIdx === 2 ? 'inline' : 'none';
-        p3.style.stroke = (this.isSimulating && frameIdx === 2 && p3Closed && liveCol !== '#ffffff') ? liveCol : '#ffffff';
-        p3.style.strokeWidth = (this.isSimulating && frameIdx === 2 && p3Closed && liveCol !== '#ffffff') ? '2.8px' : '2px';
+        p3.style.stroke = (this.isSimulating && frameIdx === 2 && p3Closed && liveCol !== baseStroke) ? liveCol : baseStroke;
+        p3.style.strokeWidth = (this.isSimulating && frameIdx === 2 && p3Closed && liveCol !== baseStroke) ? '2.8px' : '2px';
       }
       return;
     }
@@ -2426,18 +2486,18 @@ class MashimurelayCanvas {
     const isOverload = isOverloadRelay(elem.svgData);
     const isContactClosed = (isPlainF || isOverload) ? (frameIdx === 0) : (isArrow ? true : (isCON ? true : (isNC ? (frameIdx === 0) : (frameIdx === 1))));
     const liveCol = getLiveColor();
-    const shouldColorLive = this.isSimulating && isContactClosed && (liveCol !== '#ffffff');
+    const shouldColorLive = this.isSimulating && isContactClosed && (liveCol !== baseStroke);
 
     if (frameIdx === 0) {
       // Normal state (Frame 0: Closed for NC, Open for NO)
       if (p1) {
         p1.style.display = 'inline';
-        p1.style.stroke = shouldColorLive ? liveCol : '#ffffff';
+        p1.style.stroke = shouldColorLive ? liveCol : baseStroke;
         p1.style.strokeWidth = shouldColorLive ? '2.8px' : '2px';
       }
       if (p2) {
         p2.style.display = 'none';
-        p2.style.stroke = '#ffffff';
+        p2.style.stroke = baseStroke;
         p2.style.strokeWidth = '2px';
       }
       if (fill1) {
@@ -2452,7 +2512,7 @@ class MashimurelayCanvas {
         if (p1) p1.style.display = 'none';
         if (p2) {
           p2.style.display = 'inline';
-          p2.style.stroke = shouldColorLive ? liveCol : '#ffffff';
+          p2.style.stroke = shouldColorLive ? liveCol : baseStroke;
           p2.style.strokeWidth = shouldColorLive ? '2.8px' : '2px';
           p2.style.strokeLinecap = 'round';
         }
@@ -2461,7 +2521,7 @@ class MashimurelayCanvas {
         // mainPath1 contains the physical terminal leads and housing outline!
         if (p1) {
           p1.style.display = 'inline';
-          p1.style.stroke = '#ffffff';
+          p1.style.stroke = baseStroke;
           p1.style.strokeWidth = '2px';
         }
       }
@@ -2572,7 +2632,7 @@ class MashimurelayCanvas {
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('d', pointsToSvgPath(points));
       path.setAttribute('data-id', c.id);
-      path.setAttribute('stroke', '#6b7280');
+      path.setAttribute('stroke', this.getIdleWireColor());
       path.setAttribute('stroke-width', isSelected ? '4' : '2.5');
       path.setAttribute('fill', 'none');
       path.setAttribute('stroke-linecap', 'round');
@@ -2668,7 +2728,7 @@ class MashimurelayCanvas {
 
         const fontSize = el.fontSize || el.indexFontSize || 24;
         const displayText = el.comment || el.tag || 'Teks';
-        const colorVal = el.textColor || el.color || '#93c5fd';
+        const colorVal = this.adaptCustomTextColor(el.textColor || el.color || '#93c5fd');
 
         const titleText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         titleText.setAttribute('class', 'element-custom-text');
@@ -2687,7 +2747,14 @@ class MashimurelayCanvas {
         const svgWrapper = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         svgWrapper.setAttribute('transform', `translate(${-compDef.width / 2}, ${-compDef.height / 2})`);
         svgWrapper.setAttribute('pointer-events', 'none');
-        svgWrapper.innerHTML = compDef.graphics;
+        let gfxHtml = compDef.graphics;
+        if (this.isLightTheme()) {
+          gfxHtml = gfxHtml
+            .replace(/stroke:\s*(?:#ffffff|#f9f9f9|#fff\b|white)/gi, 'stroke:#0f172a')
+            .replace(/fill:\s*(?:#ffffff|#f9f9f9|#fff\b|white)/gi, 'fill:#0f172a')
+            .replace(/stroke:\s*#00ffff/gi, 'stroke:#0284c7');
+        }
+        svgWrapper.innerHTML = gfxHtml;
 
         // Group motor rotation arrows ONLY into a dedicated indicator group with origin at motor center
         // Keep strokePath2 (Y/1) and strokePath3 (Delta/2) stationary inside svgWrapper
@@ -2818,26 +2885,29 @@ class MashimurelayCanvas {
         const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         dot.setAttribute('data-conn-ids', connIds.join(','));
 
+        const isLight = this.isLightTheme();
+        const ringColor = this.getTerminalRingColor();
+        const baseInk = this.getBaseStrokeColor();
         if (wireCount === 0) {
-          // Unconnected pin: hollow cyan snap ring
+          // Unconnected pin: hollow snap ring
           dot.setAttribute('r', '4');
           dot.setAttribute('class', 'terminal-dot terminal-unconnected');
-          dot.setAttribute('fill', '#141820');
-          dot.setAttribute('stroke', '#00e5ff');
+          dot.setAttribute('fill', isLight ? '#f8fafc' : '#141820');
+          dot.setAttribute('stroke', isLight ? '#0284c7' : '#00e5ff');
           dot.setAttribute('stroke-width', '1.8');
         } else if (wireCount === 1) {
           // Connected pin (1 wire): solid crisp terminal connection
           dot.setAttribute('r', '4');
           dot.setAttribute('class', 'terminal-dot terminal-connected');
-          dot.setAttribute('fill', '#ffffff');
-          dot.setAttribute('stroke', '#121216');
+          dot.setAttribute('fill', baseInk);
+          dot.setAttribute('stroke', ringColor);
           dot.setAttribute('stroke-width', '2');
         } else {
           // Multi-wire junction (>= 2 wires): IEC standard junction node
           dot.setAttribute('r', '5.5');
           dot.setAttribute('class', 'terminal-dot terminal-junction');
-          dot.setAttribute('fill', '#ffffff');
-          dot.setAttribute('stroke', '#121216');
+          dot.setAttribute('fill', baseInk);
+          dot.setAttribute('stroke', ringColor);
           dot.setAttribute('stroke-width', '2.5');
         }
         pinG.appendChild(dot);
