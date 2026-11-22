@@ -5,9 +5,9 @@
  * Pipeline:
  * Reads from clean development source: src_dev/
  * Compiles, minifies, and obfuscates into:
- *   1. simurelay-web/ (Root: index.html, css/style.css, js/*.js) -> deployed to Netlify / GitHub
- *   2. simurelay-web/dist/
- *   3. simurelay-windows/dist/
+ *   1. mashimurelay-web/ (Root: index.html, css/style.css, js/*.js) -> deployed to Netlify / GitHub
+ *   2. mashimurelay-web/dist/
+ *   3. mashimurelay-windows/dist/
  * 
  * Guarantees:
  * - 0 HTML comments (<!-- ... --> stripped)
@@ -30,14 +30,15 @@ const WIN_DIST_DIR = path.resolve(ROOT_DIR, '..', 'mashimurelay-windows', 'dist'
 
 const RESERVED_GLOBALS = [
   'COMPONENTS_DATA',
-  'SimurelayCanvas',
+  'MashimurelayCanvas',
   'soundManager',
   'ROUTER',
-  'SimurelayEngine',
+  'MashimurelayEngine',
+  'parseLegacyCircuitTxt',
   'TauriBridge',
   'CIRCUIT_EXAMPLES',
   'LAMP_COLORS',
-  'SimurelayProjectManager',
+  'MashimurelayProjectManager',
   'Potential',
   'isPushButton',
   'isChangeoverSwitch',
@@ -64,7 +65,7 @@ const RESERVED_GLOBALS = [
   'jspdf',
   'jsPDF',
   'generateCircuitPdfReport',
-  'SimurelayPdfReport',
+  'MashimurelayPdfReport',
   'ReviewTabManager',
   'reviewTabManager'
 ];
@@ -295,11 +296,11 @@ async function runBuild() {
 
   console.log('\n=================================================================');
   console.log('✓ SUCCESS: All production files are now minified & obfuscated!');
-  console.log('  - Root simurelay-web (for Netlify/GitHub): 100% Minified & Obfuscated');
-  console.log('  - simurelay-web/dist: 100% Minified & Obfuscated');
-  console.log('  - simurelay-web/public: 100% Minified & Obfuscated');
-  console.log('  - simurelay-windows/dist: 100% Minified & Obfuscated');
-  console.log('  - Clean original source preserved in: simurelay-web/src_dev/');
+  console.log('  - Root mashimurelay-web (for Netlify/GitHub): 100% Minified & Obfuscated');
+  console.log('  - mashimurelay-web/dist: 100% Minified & Obfuscated');
+  console.log('  - mashimurelay-web/public: 100% Minified & Obfuscated');
+  console.log('  - mashimurelay-windows/dist: 100% Minified & Obfuscated');
+  console.log('  - Clean original source preserved in: mashimurelay-web/src_dev/');
   console.log('=================================================================\n');
 }
 

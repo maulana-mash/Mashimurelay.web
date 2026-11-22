@@ -647,7 +647,7 @@
 
   // Ekspor Global
   window.generateCircuitPdfReport = generateCircuitPdfReport;
-  window.SimurelayPdfReport = {
+  window.MashimurelayPdfReport = {
     generateCircuitPdfReport,
     extractCircuitBom,
     renderComponentThumbnail

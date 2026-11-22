@@ -1,5 +1,5 @@
 /**
- * Simurelay Canvas Controller
+ * Mashimurelay Canvas Controller
  * High-Performance SVG Canvas with Grid Snapping, Pan/Zoom, Wire Drawing, Dual-Mode Hit-Testing, and Realtime Animations
  */
 
@@ -43,7 +43,7 @@ function isPushButton(svgData) {
 }
 window.isPushButton = isPushButton;
 
-class SimurelayCanvas {
+class MashimurelayCanvas {
   constructor(svgElement, options = {}) {
     this.svg = svgElement;
     this.viewportGroup = this.svg.querySelector('#viewportGroup');
@@ -60,7 +60,7 @@ class SimurelayCanvas {
 
     this.options = options;
     this.circuit = {
-      header: { simurelay: 'simurelay', '3.0.0.30': '1.0', created_at: new Date().toISOString() },
+      header: { generator: 'Mashimurelay', '3.0.0.30': '1.0', created_at: new Date().toISOString() },
       data: []
     };
 
@@ -109,7 +109,7 @@ class SimurelayCanvas {
     // Simulation state
     this.isSimulating = false;
     this.isReviewMode = false;
-    this.engine = new SimurelayEngine();
+    this.engine = new MashimurelayEngine();
     this.simAnimFrame = null;
     this.simResult = null;
 
@@ -195,7 +195,7 @@ class SimurelayCanvas {
         }
       }
       if (!circuit || !circuit.data) {
-        circuit = parseLegacySimurelayTxt(trimmed);
+        circuit = parseLegacyCircuitTxt(trimmed);
       }
     } else if (typeof circuitInput === 'object') {
       circuit = circuitInput;
@@ -2954,7 +2954,7 @@ class SimurelayCanvas {
 }
 
 /**
- * Legacy Simurelay Export Parser (.txt Base64 or plain @-delimited format)
+ * Mashimurelay Text Circuit Parser (.txt Base64 or plain @-delimited format)
  */
 const LEGACY_COMPONENT_MAP = {
   'Lamp': 'lamp',
@@ -3041,7 +3041,7 @@ function resolveComponentSvg(rawType) {
   return lowerFirst;
 }
 
-function parseLegacySimurelayTxt(rawInput) {
+function parseLegacyCircuitTxt(rawInput) {
   if (!rawInput) return null;
   let text = String(rawInput).trim();
 
@@ -3074,7 +3074,7 @@ function parseLegacySimurelayTxt(rawInput) {
 
   const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
   const circuit = {
-    header: { simurelay: 'simurelay', '3.0.0.30': '1.0', format: 'legacy_txt', created_at: new Date().toISOString() },
+    header: { generator: 'Mashimurelay', '3.0.0.30': '1.0', format: 'legacy_txt', created_at: new Date().toISOString() },
     data: []
   };
 
@@ -3160,7 +3160,7 @@ function parseLegacySimurelayTxt(rawInput) {
 }
 
 /**
- * Legacy Simurelay Exporter (.txt Base64 or plain @-delimited format)
+ * Mashimurelay Text Circuit Exporter (.txt Base64 or plain @-delimited format)
  */
 const REVERSE_LEGACY_MAP = {
   'lamp': 'Lamp',
@@ -3259,7 +3259,7 @@ function exportCircuitToLegacyTxt(circuit, asBase64 = true) {
       }
     }
 
-    // BaseText in Simurelay APK stores font size in field 3 (tagNum) and field 12 (indexFontSize)
+    // BaseText in Mashimurelay mobile text format stores font size in field 3 (tagNum) and field 12 (indexFontSize)
     if (el.svgData === 'text') {
       tagPrefix = '';
       tagNum = String(el.fontSize || el.indexFontSize || 24);
@@ -3306,7 +3306,7 @@ function exportCircuitToLegacyTxt(circuit, asBase64 = true) {
 }
 
 if (typeof globalThis !== 'undefined') {
-  globalThis.SimurelayCanvas = SimurelayCanvas;
-  globalThis.parseLegacySimurelayTxt = parseLegacySimurelayTxt;
+  globalThis.MashimurelayCanvas = MashimurelayCanvas;
+  globalThis.parseLegacyCircuitTxt = parseLegacyCircuitTxt;
   globalThis.exportCircuitToLegacyTxt = exportCircuitToLegacyTxt;
 }

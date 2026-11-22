@@ -1,6 +1,6 @@
 /**
  * Mashimurelay Component Encyclopedia Technical Knowledge Base
- * Standardized to IEC 60617, IEC 60947, EN 50005, IEC 60034-8 & Simurelay Curriculum
+ * Standardized to IEC 60617, IEC 60947, EN 50005, IEC 60034-8 & Mashimurelay Electrical Curriculum
  * Enriched with Comprehensive Descriptions, Physics Simulation Mechanisms, and Full Terminal I/O Mappings
  */
 

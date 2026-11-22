@@ -1,5 +1,5 @@
 /**
- * Simurelay Simulation Engine
+ * Mashimurelay Simulation Engine
  * Discrete-Event Equipotential Graph Solver with Fixed-Point Iteration
  * Formulated by Gemini 4 Argon Deep Thinking Architecture
  */
@@ -32,7 +32,7 @@ const VALID_AC_400 = new Set([
 
 const VALID_3PH = Potential.L1 | Potential.L2 | Potential.L3;
 
-class SimurelayEngine {
+class MashimurelayEngine {
   constructor() {
     this.timerStates = new Map(); // coilId -> { elapsedMs, presetMs, prevEnergized, outputState }
     this.contactDelayTimers = new Map(); // auxContactId -> { elapsedMs, outputState }
@@ -1392,6 +1392,6 @@ function getPotentialColor(pot) {
 }
 
 if (typeof globalThis !== 'undefined') {
-  globalThis.SimurelayEngine = SimurelayEngine;
+  globalThis.MashimurelayEngine = MashimurelayEngine;
   globalThis.Potential = Potential;
 }

@@ -1,5 +1,5 @@
 /**
- * Simurelay Excel-Style Sheet Tabs & Review Session Manager
+ * Mashimurelay Excel-Style Sheet Tabs & Review Session Manager
  * Ephemeral In-App Sheet Tabs, View-Only Canvas Lock, Student Hotspot Queue Navigation
  */
 
@@ -174,14 +174,14 @@ class ReviewTabManager {
         const trimmed = sub.content.trim();
         if (trimmed.startsWith('{')) {
           circuitData = JSON.parse(trimmed);
-        } else if (typeof parseLegacySimurelayTxt === 'function') {
-          circuitData = parseLegacySimurelayTxt(trimmed);
+        } else if (typeof parseLegacyCircuitTxt === 'function') {
+          circuitData = parseLegacyCircuitTxt(trimmed);
         }
       }
     } catch (e) {
-      if (typeof parseLegacySimurelayTxt === 'function' && typeof sub.content === 'string') {
+      if (typeof parseLegacyCircuitTxt === 'function' && typeof sub.content === 'string') {
         try {
-          circuitData = parseLegacySimurelayTxt(sub.content);
+          circuitData = parseLegacyCircuitTxt(sub.content);
         } catch (ex) {
           console.error('Failed to parse student circuit:', ex);
         }

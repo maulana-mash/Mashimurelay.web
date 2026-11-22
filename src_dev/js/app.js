@@ -556,7 +556,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Auto-Save State & UI Management (Default: OFF across all platforms)
-  let isAutoSaveEnabled = localStorage.getItem('simurelay_autosave_enabled') === 'true';
+  let isAutoSaveEnabled = localStorage.getItem('mashimurelay_autosave_enabled') === 'true';
   let autoSaveDebounceTimer = null;
   let hasUnsavedChanges = false;
   let isBypassingExitGuard = false;
@@ -591,7 +591,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function toggleAutoSave() {
     isAutoSaveEnabled = !isAutoSaveEnabled;
-    localStorage.setItem('simurelay_autosave_enabled', isAutoSaveEnabled ? 'true' : 'false');
+    localStorage.setItem('mashimurelay_autosave_enabled', isAutoSaveEnabled ? 'true' : 'false');
     updateAutoSaveUI();
     if (isAutoSaveEnabled) {
       showToast('Auto-Save AKTIF: Perubahan disimpan otomatis.');
@@ -670,7 +670,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       if (typeof TauriBridge !== 'undefined' && TauriBridge.isTauri()) {
         const res = await TauriBridge.openCircuitFile(
-          'Berkas Sirkuit Simurelay (*.smrl, *.txt, *.json)',
+          'Berkas Sirkuit Mashimurelay (*.smrl, *.txt, *.json)',
           ['smrl', 'txt', 'json']
         );
         if (res && res.content) {
@@ -679,7 +679,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try { circuit = JSON.parse(res.content); } catch (e) {}
           }
           if (!circuit || !circuit.data) {
-            circuit = parseLegacySimurelayTxt(res.content);
+            circuit = parseLegacyCircuitTxt(res.content);
           }
           const baseName = res.file_name.replace(/\.[^/.]+$/, '');
           if (projectManager && circuit) {
@@ -1806,7 +1806,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const hasJobsheet = Boolean(teacherJobsheetState.base64Data && teacherJobsheetState.filename);
     const rawCircuit = {
       header: {
-        simurelay: 'simurelay',
+        generator: 'Mashimurelay',
         version: '1.0',
         name: taskName,
         class: finalClass,
@@ -2126,7 +2126,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (settingAutoSaveCheckbox) {
     settingAutoSaveCheckbox.addEventListener('change', (e) => {
       isAutoSaveEnabled = e.target.checked;
-      localStorage.setItem('simurelay_autosave_enabled', isAutoSaveEnabled ? 'true' : 'false');
+      localStorage.setItem('mashimurelay_autosave_enabled', isAutoSaveEnabled ? 'true' : 'false');
       updateAutoSaveUI();
       if (isAutoSaveEnabled) {
         showToast('Auto-Save AKTIF: Perubahan disimpan otomatis.');
@@ -3464,7 +3464,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('resize', hideCanvasContextMenu);
 
   // Initialize Canvas
-  canvas = new SimurelayCanvas(svgEl, {
+  canvas = new MashimurelayCanvas(svgEl, {
     onShowContextMenu: (type, data, clientX, clientY, worldPos) => {
       showCanvasContextMenu(type, data, clientX, clientY, worldPos);
     },
@@ -4893,7 +4893,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (typeof TauriBridge !== 'undefined' && TauriBridge.isTauri()) {
         try {
-          const savedPath = await TauriBridge.saveCircuitFile(`${safeName}.smrl`, jsonStr, 'smrl', 'Berkas Sirkuit Simurelay (*.smrl)');
+          const savedPath = await TauriBridge.saveCircuitFile(`${safeName}.smrl`, jsonStr, 'smrl', 'Berkas Sirkuit Mashimurelay (*.smrl)');
           if (savedPath) {
             showToast(`Berkas berhasil disimpan: ${savedPath}`);
             return;
@@ -4932,7 +4932,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (typeof TauriBridge !== 'undefined' && TauriBridge.isTauri()) {
         try {
-          const savedPath = await TauriBridge.saveCircuitFile(`${safeName}.txt`, txt, 'txt', 'Berkas Legacy Text Simurelay (*.txt)');
+          const savedPath = await TauriBridge.saveCircuitFile(`${safeName}.txt`, txt, 'txt', 'Berkas Teks Sirkuit Mashimurelay (*.txt)');
           if (savedPath) {
             showToast(`Berkas legacy TXT berhasil diekspor: ${savedPath}`);
             return;
@@ -4976,7 +4976,7 @@ document.addEventListener('DOMContentLoaded', () => {
           try { circuit = JSON.parse(text); } catch (err) {}
         }
         if (!circuit || !circuit.data) {
-          circuit = parseLegacySimurelayTxt(text);
+          circuit = parseLegacyCircuitTxt(text);
         }
 
         const baseName = file.name.replace(/\.[^/.]+$/, '');
@@ -5151,7 +5151,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Initialize Project Manager
-  const projectManager = new SimurelayProjectManager(canvas, (proj) => {
+  const projectManager = new MashimurelayProjectManager(canvas, (proj) => {
     updateActiveProjectDisplay(proj);
     renderProjectGrid();
   });
@@ -5765,7 +5765,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Native Android Back Button integration handler
-  window.onSimurelayBackPressed = () => {
+  window.onMashimurelayBackPressed = () => {
     // -1. Close Floating Pill if open during simulation
     if (floatingPill && floatingPill.style.display !== 'none' && canvas.isSimulating) {
       floatingPill.style.display = 'none';
@@ -5833,7 +5833,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try { circuit = JSON.parse(cliFile.content); } catch (e) {}
           }
           if (!circuit || !circuit.data) {
-            circuit = parseLegacySimurelayTxt(cliFile.content);
+            circuit = parseLegacyCircuitTxt(cliFile.content);
           }
           const baseName = cliFile.file_name.replace(/\.[^/.]+$/, '');
           if (projectManager && circuit) {

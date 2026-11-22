@@ -4,7 +4,7 @@
  * Provides sustained siren looping with fade-out and rhythmic buzzer pacing.
  */
 
-class SimurelaySoundManager {
+class MashimurelaySoundManager {
   constructor() {
     this.audioCtx = null;
     this.isMuted = localStorage.getItem('mashimurelay_sound_muted') === 'true';
@@ -324,7 +324,7 @@ class SimurelaySoundManager {
     this.setLoopChannel('bell', anyBellActive, {
       fadeInSec: 0.002, // Instant attack (no fade-in)
       fadeOutSec: 0.008, // Instant cutoff (no fade-out)
-      targetVolume: 0.95 // Authentic full volume matching original Android Simurelay
+      targetVolume: 0.95 // Authentic full volume tuned for Mashimurelay audio engine
     });
   }
 
@@ -462,4 +462,4 @@ class SimurelaySoundManager {
 }
 
 // Global Sound Manager Instance
-window.soundManager = new SimurelaySoundManager();
+window.soundManager = new MashimurelaySoundManager();

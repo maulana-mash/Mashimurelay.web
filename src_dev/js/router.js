@@ -1,5 +1,5 @@
 /**
- * Simurelay Manhattan Orthogonal Wire Router
+ * Mashimurelay Manhattan Orthogonal Wire Router
  * Based on Gemini 4 Argon Computational Discrete Geometry Architecture
  */
 

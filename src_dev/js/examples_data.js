@@ -1,10 +1,10 @@
 var CIRCUIT_EXAMPLES = {
   "rangkaian_sederhana": {
     "name": "Rangkaian Sederhana (Demo)",
-    "description": "Sirkuit demonstrasi dasar Simurelay dengan beban lampu seri, lampu berkedip, kontaktor relay, bel listrik, sirine, buzzer, dan saklar kontrol.",
+    "description": "Sirkuit demonstrasi dasar Mashimurelay dengan beban lampu seri, lampu berkedip, kontaktor relay, bel listrik, sirine, buzzer, dan saklar kontrol.",
     "circuit": {
   "header": {
-    "simurelay": "simurelay",
+    "generator": "Mashimurelay",
     "3.0.0.30": "1.0",
     "created_at": "2026-10-24T10:03:03.932Z"
   },

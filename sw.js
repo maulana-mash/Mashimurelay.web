@@ -1,5 +1,5 @@
 // Mashimurelay Offline Service Worker
-const CACHE_NAME = 'mashimurelay-cache-v359-locktoggle';
+const CACHE_NAME = 'mashimurelay-cache-v360-cleanroom-iec';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

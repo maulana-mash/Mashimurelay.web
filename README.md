@@ -132,5 +132,7 @@ mashimurelay-web/
 
 ## License & Attribution
 
-Copyright © 2026 **Mashimurelay Engineering Project**. All rights reserved.
+Copyright © 2026 **Mashimurelay Engineering Project (Mash Maulana)**. All rights reserved.
 Designed and engineered for electrical engineering education, vocational training, and industrial automation simulation.
+
+> **Standards & Original Asset Notice:** All 117 electrical schematic symbols conform to the open international public standard **IEC 60617 / DIN EN 60617** and are independently generated as clean-room vector SVGs. The equipotential graph simulation engine, per-net fault isolation, protection auto-trip logic, Teacher Lab Mode, and interactive audio synthesizer are original engineering implementations of Mashimurelay.

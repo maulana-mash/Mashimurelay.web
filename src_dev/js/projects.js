@@ -1,12 +1,12 @@
 /**
- * Simurelay Project & Multi-Canvas Manager
+ * Mashimurelay Project & Multi-Canvas Manager
  * LocalStorage persistence, multi-canvas creation, templates, and dashboard orchestration
  */
 
 const STORAGE_KEY_PROJECTS = 'mashimurelay_projects_v2';
 const STORAGE_KEY_ACTIVE_ID = 'mashimurelay_active_project_id_v2';
 
-class SimurelayProjectManager {
+class MashimurelayProjectManager {
   constructor(canvasInstance, onProjectLoaded) {
     this.canvas = canvasInstance;
     this.onProjectLoaded = onProjectLoaded;
@@ -19,9 +19,9 @@ class SimurelayProjectManager {
   init() {
     // Aggressively clean up legacy storage keys completely so old workspace projects are purged
     try {
-      localStorage.removeItem('simurelay_projects_v1');
-      localStorage.removeItem('simurelay_active_project_id_v1');
-      localStorage.removeItem('simurelay_projects');
+      localStorage.removeItem('mashimurelay_projects_v1');
+      localStorage.removeItem('mashimurelay_active_project_id_v1');
+      localStorage.removeItem('mashimurelay_projects');
       localStorage.removeItem('mashimurelay_projects_v1');
       localStorage.removeItem('mashimurelay_active_project_id_v1');
     } catch (e) {
@@ -65,7 +65,7 @@ class SimurelayProjectManager {
       defaultList.push({
         id: 'proj_demo_sederhana',
         name: 'Rangkaian Sederhana (Demo)',
-        description: 'Sirkuit demonstrasi dasar Simurelay dengan beban lampu seri, lampu berkedip, kontaktor relay, bel listrik, sirine, buzzer, dan saklar kontrol.',
+        description: 'Sirkuit demonstrasi dasar Mashimurelay dengan beban lampu seri, lampu berkedip, kontaktor relay, bel listrik, sirine, buzzer, dan saklar kontrol.',
         circuit: JSON.parse(JSON.stringify(CIRCUIT_EXAMPLES.rangkaian_sederhana.circuit)),
         updatedAt: new Date().toISOString(),
         itemCount: CIRCUIT_EXAMPLES.rangkaian_sederhana.circuit.data.length,
@@ -79,7 +79,7 @@ class SimurelayProjectManager {
       name: 'Canvas Baru (Lembar Kosong)',
       description: 'Lembar kerja sirkuit baru yang bersih siap untuk merancang.',
       circuit: {
-        header: { simurelay: 'simurelay', '3.0.0.30': '1.0', created_at: new Date().toISOString() },
+        header: { generator: 'Mashimurelay', '3.0.0.30': '1.0', created_at: new Date().toISOString() },
         data: []
       },
       updatedAt: new Date().toISOString(),
@@ -119,7 +119,7 @@ class SimurelayProjectManager {
   autoSaveCurrent(force = false) {
     if (!this.canvas || !this.activeProjectId) return;
     if (this.canvas.isReviewMode) return; // Strict guard: never auto-save student review tabs
-    const isAutoSaveOn = localStorage.getItem('simurelay_autosave_enabled') !== 'false';
+    const isAutoSaveOn = localStorage.getItem('mashimurelay_autosave_enabled') !== 'false';
     if (!isAutoSaveOn && !force) return;
 
     const proj = this.projects.find(p => p.id === this.activeProjectId);
@@ -175,7 +175,7 @@ class SimurelayProjectManager {
     const timestamp = Date.now();
     const projName = (name && name.trim()) ? name.trim() : `Sirkuit Baru #${this.projects.length + 1}`;
     const circuit = initialCircuit ? JSON.parse(JSON.stringify(initialCircuit)) : {
-      header: { simurelay: 'simurelay', '3.0.0.30': '1.0', created_at: new Date().toISOString() },
+      header: { generator: 'Mashimurelay', '3.0.0.30': '1.0', created_at: new Date().toISOString() },
       data: []
     };
 
@@ -290,7 +290,7 @@ class SimurelayProjectManager {
         fileName,
         jsonStr,
         'smrl',
-        'Berkas Sirkuit Simurelay (*.smrl)'
+        'Berkas Sirkuit Mashimurelay (*.smrl)'
       );
       if (savedPath && typeof showToast === 'function') {
         showToast(`Tersimpan di: ${savedPath}`);
@@ -332,7 +332,7 @@ class SimurelayProjectManager {
         fileName,
         b64Str,
         'txt',
-        'Simurelay Legacy Text (*.txt)'
+        'Mashimurelay Text Format (*.txt)'
       );
       if (savedPath && typeof showToast === 'function') {
         showToast(`Tersimpan di: ${savedPath}`);
@@ -382,5 +382,5 @@ class SimurelayProjectManager {
 }
 
 if (typeof globalThis !== 'undefined') {
-  globalThis.SimurelayProjectManager = SimurelayProjectManager;
+  globalThis.MashimurelayProjectManager = MashimurelayProjectManager;
 }

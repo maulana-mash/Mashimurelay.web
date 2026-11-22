@@ -16,7 +16,7 @@ const TauriBridge = {
     return null;
   },
 
-  async saveCircuitFile(defaultFilename, content, extension = 'smrl', filterDescription = 'Berkas Sirkuit Simurelay (*.smrl)') {
+  async saveCircuitFile(defaultFilename, content, extension = 'smrl', filterDescription = 'Berkas Sirkuit Mashimurelay (*.smrl)') {
     if (!this.isTauri()) return null;
     try {
       return await this.invoke('save_circuit_file', {
@@ -31,7 +31,7 @@ const TauriBridge = {
     }
   },
 
-  async openCircuitFile(filterDescription = 'Berkas Sirkuit Simurelay (*.smrl, *.json, *.txt)', extensions = ['smrl', 'json', 'txt']) {
+  async openCircuitFile(filterDescription = 'Berkas Sirkuit Mashimurelay (*.smrl, *.json, *.txt)', extensions = ['smrl', 'json', 'txt']) {
     if (!this.isTauri()) return null;
     try {
       return await this.invoke('open_circuit_file', {
