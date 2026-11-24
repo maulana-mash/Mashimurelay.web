@@ -6793,6 +6793,14 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (canvas) {
           canvas.loadCircuit(cloned);
         }
+        // Tampilkan penomoran pin terminal agar siswa langsung mempelajari kode terminal IEC / DIN
+        if (svgEl) {
+          svgEl.classList.remove('hide-terminal-labels');
+        }
+        if (settingTerminalLabelsCheckbox) {
+          settingTerminalLabelsCheckbox.checked = true;
+        }
+        localStorage.setItem('mashimu_show_terminal_labels', 'true');
         hideModal(modalPracticalModules);
         closeDashboard();
         triggerCanvasFit();

@@ -2,29 +2,61 @@
  * Mashimurelay Practical Modules & Teacher Custom Module Storage
  * 10 Modul Praktikum Terstruktur (5 Industri TITL/IML + 5 Otomotif TKR/TSM)
  * + Manajemen Modul Mandiri Guru (lokal & sinkronisasi tugas Hotspot/SMRL)
+ *
+ * Seluruh 10 contoh rangkaian dirancang menggunakan disiplin grid CAD 30px,
+ * sumber daya & baterai tegak normal (rotation: 0), busbar horizontal presisi,
+ * serta label seksi skematik standar IEC 60617 / DIN 72552.
  */
 (function (root) {
   'use strict';
+
+  function getPinYAndDir(spec, nodeIdx) {
+    const svg = spec.svgData;
+    const y = spec.y;
+    // All module examples keep rotation = 0 (upright IEC/DIN symbols)
+    if (svg === 'motor3ph') {
+      return { py: y - 90, dir: -1 };
+    }
+    if (svg === 'motorDC') {
+      return nodeIdx === 0 ? { py: y - 90, dir: -1 } : { py: y + 90, dir: 1 };
+    }
+    if (svg === 'sourceL1' || svg === 'sourceL2' || svg === 'sourceL3' ||
+        svg === 'sourceL1L2L3' || svg === 'sourceN' || svg === 'sourcePlus' || svg === 'sourceNegative') {
+      return { py: y - 60, dir: -1 };
+    }
+    if (svg === 'breaker3p' || svg === 'contactor3p' || svg === 'overload3p') {
+      return (nodeIdx % 2 === 0) ? { py: y - 60, dir: -1 } : { py: y + 60, dir: 1 };
+    }
+    if (svg === 'switch3p0' || svg === 'contactCON' || svg === 'switchCON') {
+      return nodeIdx === 0 ? { py: y - 60, dir: -1 } : { py: y + 60, dir: 1 };
+    }
+    return nodeIdx === 0 ? { py: y - 60, dir: -1 } : { py: y + 60, dir: 1 };
+  }
 
   function buildModuleCircuit(name, elementsSpec, wiresSpec, assignmentKit) {
     const data = [];
     let nextId = 1;
     const idMap = {};
+    const specMap = {};
 
     elementsSpec.forEach((spec) => {
       const id = nextId++;
-      if (spec.ref) idMap[spec.ref] = id;
+      if (spec.ref) {
+        idMap[spec.ref] = id;
+        specMap[id] = spec;
+      }
+      const isText = spec.svgData === 'text';
       const item = {
         svgData: spec.svgData,
         type: 'ElectricalElement',
         id: id,
         position: { x: spec.x, y: spec.y },
         rotation: spec.rotation || 0,
-        text: spec.text !== undefined ? spec.text : null,
+        text: isText ? (spec.comment || spec.text || '') : (spec.text !== undefined ? spec.text : null),
         tag: spec.tag !== undefined ? spec.tag : null,
         comment: spec.comment !== undefined ? spec.comment : null,
         value: null,
-        tagVisibility: spec.tagVisibility !== undefined ? spec.tagVisibility : true,
+        tagVisibility: spec.tagVisibility !== undefined ? spec.tagVisibility : !isText,
         margins: null,
         idNode1: null,
         idNode2: null,
@@ -33,10 +65,14 @@
         valueTimeOn: spec.valueTimeOn !== undefined ? spec.valueTimeOn : 2,
         valueTimeOff: spec.valueTimeOff !== undefined ? spec.valueTimeOff : 0,
         colorType: spec.colorType !== undefined ? spec.colorType : 0,
-        indexFontSize: spec.indexFontSize !== undefined ? spec.indexFontSize : 5,
+        indexFontSize: isText ? (spec.fontSize || 16) : (spec.indexFontSize !== undefined ? spec.indexFontSize : 5),
         terminalTags: spec.terminalTags || [],
         frameIndex: 0
       };
+      if (isText) {
+        item.fontSize = spec.fontSize || 16;
+        item.textColor = spec.textColor || '#38bdf8';
+      }
       if (spec.lampColor) item.lampColor = spec.lampColor;
       if (spec.presetTime !== undefined) item.presetTime = spec.presetTime;
       data.push(item);
@@ -47,7 +83,24 @@
       const n1 = w[1];
       const e2 = typeof w[2] === 'string' ? idMap[w[2]] : w[2];
       const n2 = w[3];
+      const opts = w[4] || null;
       if (!e1 || !e2) return;
+
+      let mStart = (opts && typeof opts.start === 'number') ? opts.start : 0;
+      let mCenter = (opts && typeof opts.center === 'number') ? opts.center : 0;
+      let mEnd = (opts && typeof opts.end === 'number') ? opts.end : 0;
+
+      if (opts && typeof opts.busY === 'number' && specMap[e1] && specMap[e2]) {
+        const pA = getPinYAndDir(specMap[e1], n1);
+        const pB = getPinYAndDir(specMap[e2], n2);
+        const dStart = Math.max(30, 30 + mStart);
+        const dEnd = Math.max(30, 30 + mEnd);
+        const p1y = pA.py + pA.dir * dStart;
+        const p4y = pB.py + pB.dir * dEnd;
+        const defaultMidY = Math.round(((p1y + p4y) / 2) / 30) * 30;
+        mCenter = opts.busY - defaultMidY;
+      }
+
       data.push({
         svgData: 'text',
         type: 'Connector',
@@ -59,7 +112,7 @@
         comment: null,
         value: null,
         tagVisibility: true,
-        margins: { start: 0, center: 0, end: 0 },
+        margins: { start: mStart, center: mCenter, end: mEnd },
         idNode1: n1,
         idNode2: n2,
         idElementNode1: e1,
@@ -126,7 +179,7 @@
         { code: '11 - 12 / 13 - 14', desc: 'Kontak bantu NC (lampu standby) dan NO (lampu kerja) milik -K1' }
       ],
       steps: [
-        'Pasang sumber L1 di sisi atas dan Netral (N) di sisi bawah kanvas.',
+        'Pasang sumber L1 di sisi kiri atas dan Netral (N) di sisi bawah kanvas.',
         'Hubungkan L1 menuju MCB 1P (-Q1) terminal 1, lalu keluaran terminal 2 menuju masukan PB NO (-S1) dan masukan kontak bantu -K1.',
         'Hubungkan keluaran PB NO (-S1) ke terminal A1 koil relai (-K1), lalu hubungkan A2 ke bus Netral (N).',
         'Pasang kontak NO (-K1) seri dengan Lampu Hijau (-H1) untuk indikator aktif, dan kontak NC (-K1) seri dengan Lampu Merah (-H2) untuk indikator siaga.',
@@ -144,27 +197,36 @@
       exampleCircuit: buildModuleCircuit(
         'Contoh IND-01: Dasar Kontak NO-NC',
         [
-          { ref: 'L1', svgData: 'sourceL1', x: 240, y: 60, rotation: 2 },
-          { ref: 'Q1', svgData: 'breaker1p', x: 240, y: 210, tag: '-Q1', comment: 'MCB Kontrol' },
-          { ref: 'S1', svgData: 'buttonNO', x: 240, y: 390, tag: '-S1', comment: 'Tombol Tekan' },
-          { ref: 'K1', svgData: 'coil', x: 240, y: 570, tag: '-K1', comment: 'Koil Relai' },
-          { ref: 'K1NO', svgData: 'contactNO', x: 450, y: 390, tag: '-K1', comment: 'Kontak NO -K1' },
-          { ref: 'H1', svgData: 'lamp', x: 450, y: 570, tag: '-H1', comment: 'Lampu RUN', lampColor: 'green' },
-          { ref: 'K1NC', svgData: 'contactNC', x: 660, y: 390, tag: '-K1', comment: 'Kontak NC -K1' },
-          { ref: 'H2', svgData: 'lamp', x: 660, y: 570, tag: '-H2', comment: 'Lampu STANDBY', lampColor: 'red' },
-          { ref: 'N', svgData: 'sourceN', x: 450, y: 750, rotation: 0 }
+          { svgData: 'text', x: 450, y: 30, comment: 'IND-01: DASAR KONTAK NO/NC & LAMPU INDIKATOR', fontSize: 18, textColor: '#38bdf8' },
+          { svgData: 'text', x: 360, y: 295, comment: 'KONTROL KOIL', fontSize: 13, textColor: '#94a3b8' },
+          { svgData: 'text', x: 570, y: 295, comment: 'NO (RUN)', fontSize: 13, textColor: '#34d399' },
+          { svgData: 'text', x: 780, y: 295, comment: 'NC (STANDBY)', fontSize: 13, textColor: '#f87171' },
+
+          { ref: 'L1', svgData: 'sourceL1', x: 90, y: 210, rotation: 0, terminalTags: ['L1'] },
+          { ref: 'Q1', svgData: 'breaker1p', x: 210, y: 210, tag: '-Q1', comment: 'MCB 1P', terminalTags: ['1', '2'] },
+
+          { ref: 'S1', svgData: 'buttonNO', x: 360, y: 420, tag: '-S1', comment: 'Tombol Tekan', terminalTags: ['13', '14'] },
+          { ref: 'K1', svgData: 'coil', x: 360, y: 600, tag: '-K1', comment: 'Koil Relai', terminalTags: ['A1', 'A2'] },
+
+          { ref: 'K1NO', svgData: 'contactNO', x: 570, y: 420, tag: '-K1', comment: 'Kontak NO', terminalTags: ['13', '14'] },
+          { ref: 'H1', svgData: 'lamp', x: 570, y: 600, tag: '-H1', comment: 'Lampu RUN', lampColor: 'green', terminalTags: ['X1', 'X2'] },
+
+          { ref: 'K1NC', svgData: 'contactNC', x: 780, y: 420, tag: '-K1', comment: 'Kontak NC', terminalTags: ['21', '22'] },
+          { ref: 'H2', svgData: 'lamp', x: 780, y: 600, tag: '-H2', comment: 'Lampu SIAGA', lampColor: 'red', terminalTags: ['X1', 'X2'] },
+
+          { ref: 'N', svgData: 'sourceN', x: 570, y: 780, rotation: 0, terminalTags: ['N'] }
         ],
         [
-          ['L1', 0, 'Q1', 0],
-          ['Q1', 1, 'S1', 0],
-          ['Q1', 1, 'K1NO', 0],
-          ['Q1', 1, 'K1NC', 0],
+          ['L1', 0, 'Q1', 0, { busY: 90 }],
+          ['Q1', 1, 'S1', 0, { busY: 330 }],
+          ['Q1', 1, 'K1NO', 0, { busY: 330 }],
+          ['Q1', 1, 'K1NC', 0, { busY: 330 }],
           ['S1', 1, 'K1', 0],
           ['K1NO', 1, 'H1', 0],
           ['K1NC', 1, 'H2', 0],
-          ['K1', 1, 'N', 0],
+          ['K1', 1, 'N', 0, { busY: 690 }],
           ['H1', 1, 'N', 0],
-          ['H2', 1, 'N', 0]
+          ['H2', 1, 'N', 0, { busY: 690 }]
         ]
       )
     },
@@ -219,36 +281,43 @@
       exampleCircuit: buildModuleCircuit(
         'Contoh IND-02: DOL Starter 3-Fasa',
         [
-          // Sirkuit Daya 3-Fasa (kiri)
-          { ref: 'PWR3', svgData: 'sourceL1L2L3', x: 210, y: 60, rotation: 2 },
-          { ref: 'Q1', svgData: 'breaker3p', x: 210, y: 210, tag: '-Q1', comment: 'MCB Daya 3P' },
-          { ref: 'KM1P', svgData: 'contactor3p', x: 210, y: 390, tag: '-KM1', comment: 'Kontak Daya -KM1' },
-          { ref: 'M1', svgData: 'motor3ph', x: 210, y: 600, tag: '-M1', comment: 'Motor 3 Fasa' },
-          // Sirkuit Kontrol 1-Fasa (kanan)
-          { ref: 'L1', svgData: 'sourceL1', x: 540, y: 60, rotation: 2 },
-          { ref: 'Q2', svgData: 'breaker1p', x: 540, y: 180, tag: '-Q2', comment: 'MCB Kontrol' },
-          { ref: 'S0', svgData: 'buttonNC', x: 540, y: 330, tag: '-S0', comment: 'STOP' },
-          { ref: 'S1', svgData: 'buttonNO', x: 540, y: 480, tag: '-S1', comment: 'START' },
-          { ref: 'K1L', svgData: 'contactNO', x: 720, y: 480, tag: '-KM1', comment: 'Pengunci 13-14' },
-          { ref: 'KM1C', svgData: 'coil', x: 540, y: 630, tag: '-KM1', comment: 'Koil -KM1' },
-          { ref: 'H1', svgData: 'lamp', x: 720, y: 630, tag: '-H1', comment: 'Lampu RUN', lampColor: 'green' },
-          { ref: 'N', svgData: 'sourceN', x: 630, y: 780, rotation: 0 }
+          { svgData: 'text', x: 240, y: 30, comment: 'SIRKUIT DAYA 3-FASA (380V)', fontSize: 16, textColor: '#38bdf8' },
+          { svgData: 'text', x: 780, y: 30, comment: 'SIRKUIT KONTROL 1-FASA (SELF-HOLDING)', fontSize: 16, textColor: '#34d399' },
+
+          // Sirkuit Daya 3-Fasa (kiri) — sumber tegak L1-L2-L3
+          { ref: 'PWR3', svgData: 'sourceL1L2L3', x: 120, y: 270, rotation: 0, terminalTags: ['L1', 'L2', 'L3'] },
+          { ref: 'Q1', svgData: 'breaker3p', x: 330, y: 300, tag: '-Q1', comment: 'MCB Daya 3P', terminalTags: ['1', '2', '3', '4', '5', '6'] },
+          { ref: 'KM1P', svgData: 'contactor3p', x: 330, y: 510, tag: '-KM1', comment: 'Kontak Daya', terminalTags: ['1', '2', '3', '4', '5', '6'] },
+          { ref: 'M1', svgData: 'motor3ph', x: 330, y: 750, tag: '-M1', comment: 'Motor 3 Fasa', terminalTags: ['U', 'V', 'W'] },
+
+          // Sirkuit Kontrol 1-Fasa (kanan) — sumber tegak L1
+          { ref: 'L1', svgData: 'sourceL1', x: 570, y: 240, rotation: 0, terminalTags: ['L1'] },
+          { ref: 'Q2', svgData: 'breaker1p', x: 720, y: 240, tag: '-Q2', comment: 'MCB Kontrol', terminalTags: ['1', '2'] },
+          { ref: 'S0', svgData: 'buttonNC', x: 720, y: 420, tag: '-S0', comment: 'STOP', terminalTags: ['11', '12'] },
+          { ref: 'S1', svgData: 'buttonNO', x: 720, y: 600, tag: '-S1', comment: 'START', terminalTags: ['13', '14'] },
+          { ref: 'K1L', svgData: 'contactNO', x: 930, y: 600, tag: '-KM1', comment: 'Pengunci 13-14', terminalTags: ['13', '14'] },
+          { ref: 'KM1C', svgData: 'coil', x: 720, y: 780, tag: '-KM1', comment: 'Koil -KM1', terminalTags: ['A1', 'A2'] },
+          { ref: 'H1', svgData: 'lamp', x: 930, y: 780, tag: '-H1', comment: 'Lampu RUN', lampColor: 'green', terminalTags: ['X1', 'X2'] },
+          { ref: 'N', svgData: 'sourceN', x: 810, y: 960, rotation: 0, terminalTags: ['N'] }
         ],
         [
-          // Daya 3-fasa lurus (rotation 2 pada sourceL1L2L3: pin2 kiri, pin1 tengah, pin0 kanan)
-          ['PWR3', 2, 'Q1', 0], ['PWR3', 1, 'Q1', 2], ['PWR3', 0, 'Q1', 4],
+          // Busbar 3-fasa horizontal rapi L1 (y=90), L2 (y=120), L3 (y=150)
+          ['PWR3', 0, 'Q1', 0, { busY: 90 }],
+          ['PWR3', 1, 'Q1', 2, { busY: 120 }],
+          ['PWR3', 2, 'Q1', 4, { busY: 150 }],
           ['Q1', 1, 'KM1P', 0], ['Q1', 3, 'KM1P', 2], ['Q1', 5, 'KM1P', 4],
           ['KM1P', 1, 'M1', 0], ['KM1P', 3, 'M1', 1], ['KM1P', 5, 'M1', 2],
-          // Kontrol DOL
-          ['L1', 0, 'Q2', 0],
+
+          // Kontrol DOL simetris
+          ['L1', 0, 'Q2', 0, { busY: 120 }],
           ['Q2', 1, 'S0', 0],
           ['S0', 1, 'S1', 0],
-          ['S0', 1, 'K1L', 0],
+          ['S0', 1, 'K1L', 0, { busY: 510 }],
           ['S1', 1, 'KM1C', 0],
-          ['K1L', 1, 'KM1C', 0],
+          ['K1L', 1, 'KM1C', 0, { busY: 690 }],
           ['K1L', 1, 'H1', 0],
-          ['KM1C', 1, 'N', 0],
-          ['H1', 1, 'N', 0]
+          ['KM1C', 1, 'N', 0, { busY: 870 }],
+          ['H1', 1, 'N', 0, { busY: 870 }]
         ]
       )
     },
@@ -284,10 +353,10 @@
         { code: '-S1 / -S2', desc: 'Tombol START Forward (-S1) dan START Reverse (-S2)' }
       ],
       steps: [
-        'Bangun sirkuit daya: Sumber 3-fasa -> MCB 3P (-Q1) bercabang ke Kontaktor -KM1 (lurus) dan Kontaktor -KM2 (tukar fasa kiri & kanan pada keluaran ke motor -M1).',
+        'Bangun sirkuit daya: Sumber 3-fasa -> MCB 3P (-Q1) bercabang ke Kontaktor -KM1 (lurus) dan Kontaktor -KM2 (tukar fasa L1 & L3 pada keluaran ke motor -M1).',
         'Bangun sirkuit kontrol dari L1 -> MCB 1P (-Q2) -> PB STOP NC (-S0).',
-        'Buat cabang Forward: -S1 (diparalel pengunci NO -KM1) -> Kontak Interlock NC -KM2 -> Koil -KM1 + Lampu Hijau.',
-        'Buat cabang Reverse: -S2 (diparalel pengunci NO -KM2) -> Kontak Interlock NC -KM1 -> Koil -KM2 + Lampu Kuning.',
+        'Buat cabang Forward: -S1 (diparalel pengunci NO -KM1) -> Kontak Interlock NC -KM2 -> Koil -KM1 + Lampu Hijau FWD.',
+        'Buat cabang Reverse: -S2 (diparalel pengunci NO -KM2) -> Kontak Interlock NC -KM1 -> Koil -KM2 + Lampu Kuning REV.',
         'Uji interlock: saat -KM1 aktif (Forward), tekan -S2 dan pastikan -KM2 tetap terkunci mati sampai -S0 ditekan!'
       ],
       checks: [
@@ -303,48 +372,83 @@
       exampleCircuit: buildModuleCircuit(
         'Contoh IND-03: Forward-Reverse Interlock',
         [
-          // Daya 3-Fasa
-          { ref: 'PWR3', svgData: 'sourceL1L2L3', x: 240, y: 60, rotation: 2 },
-          { ref: 'Q1', svgData: 'breaker3p', x: 240, y: 180, tag: '-Q1', comment: 'MCB 3P' },
-          { ref: 'KM1P', svgData: 'contactor3p', x: 150, y: 360, tag: '-KM1', comment: 'Daya FWD' },
-          { ref: 'KM2P', svgData: 'contactor3p', x: 360, y: 360, tag: '-KM2', comment: 'Daya REV' },
-          { ref: 'M1', svgData: 'motor3ph', x: 240, y: 570, tag: '-M1', comment: 'Motor 3P' },
-          // Kontrol Interlock
-          { ref: 'L1', svgData: 'sourceL1', x: 660, y: 60, rotation: 2 },
-          { ref: 'Q2', svgData: 'breaker1p', x: 660, y: 180, tag: '-Q2', comment: 'MCB Kontrol' },
-          { ref: 'S0', svgData: 'buttonNC', x: 660, y: 300, tag: '-S0', comment: 'STOP' },
+          { svgData: 'text', x: 390, y: 30, comment: 'SIRKUIT DAYA 3-FASA (TUKAR FASA L1 <-> L3)', fontSize: 16, textColor: '#38bdf8' },
+          { svgData: 'text', x: 1080, y: 30, comment: 'SIRKUIT KONTROL INTERLOCK (-KM1 / -KM2)', fontSize: 16, textColor: '#34d399' },
+          { svgData: 'text', x: 900, y: 480, comment: 'CABANG FORWARD', fontSize: 13, textColor: '#34d399' },
+          { svgData: 'text', x: 1290, y: 480, comment: 'CABANG REVERSE', fontSize: 13, textColor: '#fbbf24' },
+
+          // Daya 3-Fasa (kiri)
+          { ref: 'PWR3', svgData: 'sourceL1L2L3', x: 120, y: 270, rotation: 0, terminalTags: ['L1', 'L2', 'L3'] },
+          { ref: 'Q1', svgData: 'breaker3p', x: 390, y: 270, tag: '-Q1', comment: 'MCB 3P', terminalTags: ['1', '2', '3', '4', '5', '6'] },
+          { ref: 'KM1P', svgData: 'contactor3p', x: 270, y: 540, tag: '-KM1', comment: 'Daya FWD', terminalTags: ['1', '2', '3', '4', '5', '6'] },
+          { ref: 'KM2P', svgData: 'contactor3p', x: 540, y: 540, tag: '-KM2', comment: 'Daya REV', terminalTags: ['1', '2', '3', '4', '5', '6'] },
+          { ref: 'M1', svgData: 'motor3ph', x: 390, y: 870, tag: '-M1', comment: 'Motor 3P', terminalTags: ['U', 'V', 'W'] },
+
+          // Kontrol Interlock (kanan — Q2 & S0 di tengah simetris x=1080!)
+          { ref: 'L1', svgData: 'sourceL1', x: 930, y: 210, rotation: 0, terminalTags: ['L1'] },
+          { ref: 'Q2', svgData: 'breaker1p', x: 1080, y: 210, tag: '-Q2', comment: 'MCB Kontrol', terminalTags: ['1', '2'] },
+          { ref: 'S0', svgData: 'buttonNC', x: 1080, y: 390, tag: '-S0', comment: 'STOP', terminalTags: ['11', '12'] },
+
           // Cabang FWD
-          { ref: 'S1', svgData: 'buttonNO', x: 540, y: 450, tag: '-S1', comment: 'FWD' },
-          { ref: 'L1H', svgData: 'contactNO', x: 660, y: 450, tag: '-KM1', comment: 'Hold FWD' },
-          { ref: 'IL2', svgData: 'contactNC', x: 600, y: 600, tag: '-KM2', comment: 'Interlock -KM2' },
-          { ref: 'KM1C', svgData: 'coil', x: 600, y: 750, tag: '-KM1', comment: 'Koil FWD' },
+          { ref: 'S1', svgData: 'buttonNO', x: 810, y: 600, tag: '-S1', comment: 'START FWD', terminalTags: ['13', '14'] },
+          { ref: 'L1H', svgData: 'contactNO', x: 990, y: 600, tag: '-KM1', comment: 'Hold FWD', terminalTags: ['13', '14'] },
+          { ref: 'IL2', svgData: 'contactNC', x: 810, y: 780, tag: '-KM2', comment: 'Interlock -KM2', terminalTags: ['21', '22'] },
+          { ref: 'KM1C', svgData: 'coil', x: 810, y: 960, tag: '-KM1', comment: 'Koil FWD', terminalTags: ['A1', 'A2'] },
+          { ref: 'H1', svgData: 'lamp', x: 990, y: 960, tag: '-H1', comment: 'FWD', lampColor: 'green', terminalTags: ['X1', 'X2'] },
+
           // Cabang REV
-          { ref: 'S2', svgData: 'buttonNO', x: 840, y: 450, tag: '-S2', comment: 'REV' },
-          { ref: 'L2H', svgData: 'contactNO', x: 960, y: 450, tag: '-KM2', comment: 'Hold REV' },
-          { ref: 'IL1', svgData: 'contactNC', x: 900, y: 600, tag: '-KM1', comment: 'Interlock -KM1' },
-          { ref: 'KM2C', svgData: 'coil', x: 900, y: 750, tag: '-KM2', comment: 'Koil REV' },
-          { ref: 'N', svgData: 'sourceN', x: 750, y: 900, rotation: 0 }
+          { ref: 'S2', svgData: 'buttonNO', x: 1200, y: 600, tag: '-S2', comment: 'START REV', terminalTags: ['13', '14'] },
+          { ref: 'L2H', svgData: 'contactNO', x: 1380, y: 600, tag: '-KM2', comment: 'Hold REV', terminalTags: ['13', '14'] },
+          { ref: 'IL1', svgData: 'contactNC', x: 1200, y: 780, tag: '-KM1', comment: 'Interlock -KM1', terminalTags: ['21', '22'] },
+          { ref: 'KM2C', svgData: 'coil', x: 1200, y: 960, tag: '-KM2', comment: 'Koil REV', terminalTags: ['A1', 'A2'] },
+          { ref: 'H2', svgData: 'lamp', x: 1380, y: 960, tag: '-H2', comment: 'REV', lampColor: 'yellow', terminalTags: ['X1', 'X2'] },
+
+          { ref: 'N', svgData: 'sourceN', x: 1080, y: 1140, rotation: 0, terminalTags: ['N'] }
         ],
         [
-          ['PWR3', 2, 'Q1', 0], ['PWR3', 1, 'Q1', 2], ['PWR3', 0, 'Q1', 4],
-          // Q1 -> KM1P lurus
-          ['Q1', 1, 'KM1P', 0], ['Q1', 3, 'KM1P', 2], ['Q1', 5, 'KM1P', 4],
-          // Q1 -> KM2P lurus di atas, tukar fasa di bawah
-          ['Q1', 1, 'KM2P', 0], ['Q1', 3, 'KM2P', 2], ['Q1', 5, 'KM2P', 4],
-          // KM1P -> M1 (U, V, W)
-          ['KM1P', 1, 'M1', 0], ['KM1P', 3, 'M1', 1], ['KM1P', 5, 'M1', 2],
-          // KM2P -> M1 tukar pin 1 & 5 (W, V, U)
-          ['KM2P', 1, 'M1', 2], ['KM2P', 3, 'M1', 1], ['KM2P', 5, 'M1', 0],
+          // Busbar 3-fasa masuk Q1
+          ['PWR3', 0, 'Q1', 0, { busY: 90 }],
+          ['PWR3', 1, 'Q1', 2, { busY: 120 }],
+          ['PWR3', 2, 'Q1', 4, { busY: 150 }],
+          // Q1 -> KM1P (3 tingkat terpisah rapi)
+          ['Q1', 1, 'KM1P', 0, { busY: 360 }],
+          ['Q1', 3, 'KM1P', 2, { busY: 390 }],
+          ['Q1', 5, 'KM1P', 4, { busY: 420 }],
+          // Q1 -> KM2P (3 tingkat sejajar rapi)
+          ['Q1', 1, 'KM2P', 0, { busY: 360 }],
+          ['Q1', 3, 'KM2P', 2, { busY: 390 }],
+          ['Q1', 5, 'KM2P', 4, { busY: 420 }],
+          // KM1P -> M1 (U, V, W bertingkat rapi)
+          ['KM1P', 1, 'M1', 0, { busY: 660 }],
+          ['KM1P', 3, 'M1', 1, { busY: 690 }],
+          ['KM1P', 5, 'M1', 2, { busY: 720 }],
+          // KM2P -> M1 tukar fasa L1 <-> L3 pada 3 tingkat terpisah
+          ['KM2P', 1, 'M1', 2, { busY: 720 }],
+          ['KM2P', 3, 'M1', 1, { busY: 690 }],
+          ['KM2P', 5, 'M1', 0, { busY: 660 }],
+
           // Kontrol
-          ['L1', 0, 'Q2', 0],
+          ['L1', 0, 'Q2', 0, { busY: 90 }],
           ['Q2', 1, 'S0', 0],
-          ['S0', 1, 'S1', 0], ['S0', 1, 'L1H', 0],
-          ['S0', 1, 'S2', 0], ['S0', 1, 'L2H', 0],
-          ['S1', 1, 'IL2', 0], ['L1H', 1, 'IL2', 0],
+          ['S0', 1, 'S1', 0, { busY: 510 }],
+          ['S0', 1, 'L1H', 0, { busY: 510 }],
+          ['S0', 1, 'S2', 0, { busY: 510 }],
+          ['S0', 1, 'L2H', 0, { busY: 510 }],
+          // FWD
+          ['S1', 1, 'IL2', 0],
+          ['L1H', 1, 'IL2', 0, { busY: 690 }],
           ['IL2', 1, 'KM1C', 0],
-          ['S2', 1, 'IL1', 0], ['L2H', 1, 'IL1', 0],
+          ['IL2', 1, 'H1', 0, { busY: 870 }],
+          // REV
+          ['S2', 1, 'IL1', 0],
+          ['L2H', 1, 'IL1', 0, { busY: 690 }],
           ['IL1', 1, 'KM2C', 0],
-          ['KM1C', 1, 'N', 0], ['KM2C', 1, 'N', 0]
+          ['IL1', 1, 'H2', 0, { busY: 870 }],
+          // Netral horizontal bersih
+          ['KM1C', 1, 'N', 0, { busY: 1050 }],
+          ['H1', 1, 'N', 0, { busY: 1050 }],
+          ['KM2C', 1, 'N', 0, { busY: 1050 }],
+          ['H2', 1, 'N', 0, { busY: 1050 }]
         ]
       )
     },
@@ -384,7 +488,7 @@
         'Dari keluaran -S1, hubungkan paralel ke Lampu Tahap 1 (-H1), Koil Timer On-Delay (-KT1, set 3 detik), dan Koil Timer Off-Delay (-KT2, set 3 detik).',
         'Pasang jalur cabang dari keluaran MCB -Q1 (sebelum -S1!) menuju Kontak NO On-Delay (-KT1) -> Lampu Tahap 2 (-H2).',
         'Pasang jalur cabang lain dari keluaran MCB -Q1 menuju Kontak NO Off-Delay (-KT2) -> Lampu Pendingin (-H3).',
-        'Jalankan simulasi: ON-kan -Q1 lalu -S1, amati urutan nyala H1 & H3 langsung, disusul H2 setelah 3 detik; lalu matikan -S1 dan amati H3 tetap menyala 3 detik sebelum padam!'
+        'Jalankan simulasi (RUN): ON-kan -Q1 lalu -S1, amati urutan nyala H1 & H3 langsung, disusul H2 setelah 3 detik; lalu matikan -S1 dan amati H3 tetap menyala 3 detik sebelum padam!'
       ],
       checks: [
         'Saat -S1 diaktifkan, Lampu -H1 dan Lampu Pendingin -H3 langsung menyala.',
@@ -399,33 +503,43 @@
       exampleCircuit: buildModuleCircuit(
         'Contoh IND-04: Timer On-Delay & Off-Delay',
         [
-          { ref: 'L1', svgData: 'sourceL1', x: 210, y: 60, rotation: 2 },
-          { ref: 'Q1', svgData: 'breaker1p', x: 210, y: 180, tag: '-Q1', comment: 'MCB 1P' },
-          { ref: 'S1', svgData: 'switchNO', x: 210, y: 330, tag: '-S1', comment: 'Saklar Kontrol' },
-          { ref: 'H1', svgData: 'lamp', x: 180, y: 540, tag: '-H1', comment: 'Tahap 1', lampColor: 'green' },
-          { ref: 'KT1', svgData: 'coilDelayOn', x: 330, y: 540, tag: '-KT1', comment: 'TON 3s', valueTimeOn: 3 },
-          { ref: 'KT2', svgData: 'coilDelayOff', x: 480, y: 540, tag: '-KT2', comment: 'TOF 3s', valueTimeOn: 3, valueTimeOff: 3 },
-          { ref: 'C1', svgData: 'contactNODelayOn', x: 660, y: 360, tag: '-KT1', comment: 'Kontak TON' },
-          { ref: 'H2', svgData: 'lamp', x: 660, y: 540, tag: '-H2', comment: 'Tahap 2 (Tunda ON)', lampColor: 'yellow' },
-          { ref: 'C2', svgData: 'contactNODelayOff', x: 840, y: 360, tag: '-KT2', comment: 'Kontak TOF' },
-          { ref: 'H3', svgData: 'lamp', x: 840, y: 540, tag: '-H3', comment: 'Pendingin (Tunda OFF)', lampColor: 'blue' },
-          { ref: 'N', svgData: 'sourceN', x: 510, y: 720, rotation: 0 }
+          { svgData: 'text', x: 600, y: 30, comment: 'IND-04: KENDALI TIMER ON-DELAY (-KT1 3s) & OFF-DELAY (-KT2 3s)', fontSize: 17, textColor: '#38bdf8' },
+          { svgData: 'text', x: 420, y: 300, comment: 'SAKLAR & KOIL TIMER', fontSize: 13, textColor: '#94a3b8' },
+          { svgData: 'text', x: 810, y: 300, comment: 'TUNDA HIDUP (TON)', fontSize: 13, textColor: '#fbbf24' },
+          { svgData: 'text', x: 1020, y: 300, comment: 'TUNDA MATI (TOF)', fontSize: 13, textColor: '#60a5fa' },
+
+          { ref: 'L1', svgData: 'sourceL1', x: 90, y: 210, rotation: 0, terminalTags: ['L1'] },
+          { ref: 'Q1', svgData: 'breaker1p', x: 240, y: 210, tag: '-Q1', comment: 'MCB 1P', terminalTags: ['1', '2'] },
+          { ref: 'S1', svgData: 'switchNO', x: 240, y: 420, tag: '-S1', comment: 'Saklar Utama', terminalTags: ['13', '14'] },
+
+          // 5 Beban sejajar persis di y=630 dengan spasi konsisten
+          { ref: 'H1', svgData: 'lamp', x: 240, y: 630, tag: '-H1', comment: 'Tahap 1', lampColor: 'green', terminalTags: ['X1', 'X2'] },
+          { ref: 'KT1', svgData: 'coilDelayOn', x: 420, y: 630, tag: '-KT1', comment: 'TON 3s', valueTimeOn: 3, terminalTags: ['A1', 'A2'] },
+          { ref: 'KT2', svgData: 'coilDelayOff', x: 600, y: 630, tag: '-KT2', comment: 'TOF 3s', valueTimeOn: 3, valueTimeOff: 3, terminalTags: ['A1', 'A2'] },
+
+          { ref: 'C1', svgData: 'contactNODelayOn', x: 810, y: 420, tag: '-KT1', comment: 'Kontak TON', terminalTags: ['67', '68'] },
+          { ref: 'H2', svgData: 'lamp', x: 810, y: 630, tag: '-H2', comment: 'Tahap 2', lampColor: 'yellow', terminalTags: ['X1', 'X2'] },
+
+          { ref: 'C2', svgData: 'contactNODelayOff', x: 1020, y: 420, tag: '-KT2', comment: 'Kontak TOF', terminalTags: ['67', '68'] },
+          { ref: 'H3', svgData: 'lamp', x: 1020, y: 630, tag: '-H3', comment: 'Pendingin', lampColor: 'blue', terminalTags: ['X1', 'X2'] },
+
+          { ref: 'N', svgData: 'sourceN', x: 600, y: 810, rotation: 0, terminalTags: ['N'] }
         ],
         [
-          ['L1', 0, 'Q1', 0],
+          ['L1', 0, 'Q1', 0, { busY: 90 }],
           ['Q1', 1, 'S1', 0],
-          ['Q1', 1, 'C1', 0],
-          ['Q1', 1, 'C2', 0],
+          ['Q1', 1, 'C1', 0, { busY: 330 }],
+          ['Q1', 1, 'C2', 0, { busY: 330 }],
           ['S1', 1, 'H1', 0],
-          ['S1', 1, 'KT1', 0],
-          ['S1', 1, 'KT2', 0],
+          ['S1', 1, 'KT1', 0, { busY: 510 }],
+          ['S1', 1, 'KT2', 0, { busY: 510 }],
           ['C1', 1, 'H2', 0],
           ['C2', 1, 'H3', 0],
-          ['H1', 1, 'N', 0],
-          ['KT1', 1, 'N', 0],
+          ['H1', 1, 'N', 0, { busY: 720 }],
+          ['KT1', 1, 'N', 0, { busY: 720 }],
           ['KT2', 1, 'N', 0],
-          ['H2', 1, 'N', 0],
-          ['H3', 1, 'N', 0]
+          ['H2', 1, 'N', 0, { busY: 720 }],
+          ['H3', 1, 'N', 0, { busY: 720 }]
         ]
       )
     },
@@ -480,40 +594,58 @@
       exampleCircuit: buildModuleCircuit(
         'Contoh IND-05: Proteksi TOR & Alarm Trip',
         [
-          // Daya 3-Fasa + TOR
-          { ref: 'PWR3', svgData: 'sourceL1L2L3', x: 180, y: 60, rotation: 2 },
-          { ref: 'Q1', svgData: 'breaker3p', x: 180, y: 180, tag: '-Q1', comment: 'MCB 3P' },
-          { ref: 'KM1P', svgData: 'contactor3p', x: 180, y: 330, tag: '-KM1', comment: 'Kontaktor' },
-          { ref: 'FR1', svgData: 'overload3p', x: 180, y: 480, tag: '-FR1', comment: 'TOR 3P (Klik utk Trip)' },
-          { ref: 'M1', svgData: 'motor3ph', x: 180, y: 660, tag: '-M1', comment: 'Motor 3P' },
-          // Kontrol + NC TOR
-          { ref: 'L1', svgData: 'sourceL1', x: 510, y: 60, rotation: 2 },
-          { ref: 'Q2', svgData: 'breaker1p', x: 510, y: 180, tag: '-Q2', comment: 'MCB Kontrol' },
-          { ref: 'FRNC', svgData: 'contactNC', x: 510, y: 330, tag: '-FR1', comment: 'TOR NC 95-96', terminalTags: ['95', '96'] },
-          { ref: 'S0', svgData: 'buttonNC', x: 510, y: 480, tag: '-S0', comment: 'STOP' },
-          { ref: 'S1', svgData: 'buttonNO', x: 510, y: 630, tag: '-S1', comment: 'START' },
-          { ref: 'HOLD', svgData: 'contactNO', x: 660, y: 630, tag: '-KM1', comment: 'Hold 13-14' },
-          { ref: 'KM1C', svgData: 'coil', x: 510, y: 780, tag: '-KM1', comment: 'Koil -KM1' },
-          { ref: 'H1', svgData: 'lamp', x: 660, y: 780, tag: '-H1', comment: 'RUN', lampColor: 'green' },
-          // Alarm Trip NO TOR
-          { ref: 'FRNO', svgData: 'contactNO', x: 840, y: 330, tag: '-FR1', comment: 'TOR NO 97-98', terminalTags: ['97', '98'] },
-          { ref: 'H2', svgData: 'lamp', x: 810, y: 630, tag: '-H2', comment: 'TRIP ALARM', lampColor: 'red' },
-          { ref: 'HA1', svgData: 'buzzer', x: 930, y: 630, tag: '-HA1', comment: 'Buzzer Trip' },
-          { ref: 'N', svgData: 'sourceN', x: 690, y: 930, rotation: 0 }
+          { svgData: 'text', x: 240, y: 30, comment: 'SIRKUIT DAYA + TOR (-FR1)', fontSize: 16, textColor: '#38bdf8' },
+          { svgData: 'text', x: 780, y: 30, comment: 'KONTROL DOL (NC 95-96)', fontSize: 16, textColor: '#34d399' },
+          { svgData: 'text', x: 1170, y: 30, comment: 'ALARM TRIP (NO 97-98)', fontSize: 16, textColor: '#f87171' },
+          { svgData: 'text', x: 330, y: 1020, comment: 'Klik TOR (-FR1) saat RUN untuk simulasi Trip', fontSize: 13, textColor: '#fbbf24' },
+
+          // Daya 3-Fasa + TOR (kiri)
+          { ref: 'PWR3', svgData: 'sourceL1L2L3', x: 120, y: 270, rotation: 0, terminalTags: ['L1', 'L2', 'L3'] },
+          { ref: 'Q1', svgData: 'breaker3p', x: 330, y: 270, tag: '-Q1', comment: 'MCB 3P', terminalTags: ['1', '2', '3', '4', '5', '6'] },
+          { ref: 'KM1P', svgData: 'contactor3p', x: 330, y: 450, tag: '-KM1', comment: 'Kontaktor', terminalTags: ['1', '2', '3', '4', '5', '6'] },
+          { ref: 'FR1', svgData: 'overload3p', x: 330, y: 630, tag: '-FR1', comment: 'TOR 3P', terminalTags: ['1', '2', '3', '4', '5', '6'] },
+          { ref: 'M1', svgData: 'motor3ph', x: 330, y: 840, tag: '-M1', comment: 'Motor 3P', terminalTags: ['U', 'V', 'W'] },
+
+          // Kontrol + NC TOR (tengah)
+          { ref: 'L1', svgData: 'sourceL1', x: 570, y: 210, rotation: 0, terminalTags: ['L1'] },
+          { ref: 'Q2', svgData: 'breaker1p', x: 690, y: 210, tag: '-Q2', comment: 'MCB Kontrol', terminalTags: ['1', '2'] },
+          { ref: 'FRNC', svgData: 'contactNC', x: 690, y: 420, tag: '-FR1', comment: 'TOR 95-96', terminalTags: ['95', '96'] },
+          { ref: 'S0', svgData: 'buttonNC', x: 690, y: 600, tag: '-S0', comment: 'STOP', terminalTags: ['11', '12'] },
+          { ref: 'S1', svgData: 'buttonNO', x: 690, y: 780, tag: '-S1', comment: 'START', terminalTags: ['13', '14'] },
+          { ref: 'HOLD', svgData: 'contactNO', x: 870, y: 780, tag: '-KM1', comment: 'Hold 13-14', terminalTags: ['13', '14'] },
+          { ref: 'KM1C', svgData: 'coil', x: 690, y: 960, tag: '-KM1', comment: 'Koil -KM1', terminalTags: ['A1', 'A2'] },
+          { ref: 'H1', svgData: 'lamp', x: 870, y: 960, tag: '-H1', comment: 'RUN', lampColor: 'green', terminalTags: ['X1', 'X2'] },
+
+          // Alarm Trip NO TOR (kanan) — beban sejajar persis di y=960
+          { ref: 'FRNO', svgData: 'contactNO', x: 1080, y: 420, tag: '-FR1', comment: 'TOR 97-98', terminalTags: ['97', '98'] },
+          { ref: 'H2', svgData: 'lamp', x: 1080, y: 960, tag: '-H2', comment: 'ALARM TRIP', lampColor: 'red', terminalTags: ['X1', 'X2'] },
+          { ref: 'HA1', svgData: 'buzzer', x: 1260, y: 960, tag: '-HA1', comment: 'Buzzer', terminalTags: ['X1', 'X2'] },
+
+          { ref: 'N', svgData: 'sourceN', x: 960, y: 1140, rotation: 0, terminalTags: ['N'] }
         ],
         [
-          ['PWR3', 2, 'Q1', 0], ['PWR3', 1, 'Q1', 2], ['PWR3', 0, 'Q1', 4],
+          ['PWR3', 0, 'Q1', 0, { busY: 90 }],
+          ['PWR3', 1, 'Q1', 2, { busY: 120 }],
+          ['PWR3', 2, 'Q1', 4, { busY: 150 }],
           ['Q1', 1, 'KM1P', 0], ['Q1', 3, 'KM1P', 2], ['Q1', 5, 'KM1P', 4],
           ['KM1P', 1, 'FR1', 0], ['KM1P', 3, 'FR1', 2], ['KM1P', 5, 'FR1', 4],
           ['FR1', 1, 'M1', 0], ['FR1', 3, 'M1', 1], ['FR1', 5, 'M1', 2],
-          ['L1', 0, 'Q2', 0],
+
+          ['L1', 0, 'Q2', 0, { busY: 90 }],
           ['Q2', 1, 'FRNC', 0],
-          ['Q2', 1, 'FRNO', 0],
+          ['Q2', 1, 'FRNO', 0, { busY: 330 }],
           ['FRNC', 1, 'S0', 0],
-          ['S0', 1, 'S1', 0], ['S0', 1, 'HOLD', 0],
-          ['S1', 1, 'KM1C', 0], ['HOLD', 1, 'KM1C', 0], ['HOLD', 1, 'H1', 0],
-          ['FRNO', 1, 'H2', 0], ['FRNO', 1, 'HA1', 0],
-          ['KM1C', 1, 'N', 0], ['H1', 1, 'N', 0], ['H2', 1, 'N', 0], ['HA1', 1, 'N', 0]
+          ['S0', 1, 'S1', 0],
+          ['S0', 1, 'HOLD', 0, { busY: 690 }],
+          ['S1', 1, 'KM1C', 0],
+          ['HOLD', 1, 'KM1C', 0, { busY: 870 }],
+          ['HOLD', 1, 'H1', 0],
+          ['FRNO', 1, 'H2', 0],
+          ['FRNO', 1, 'HA1', 0, { busY: 870 }],
+          ['KM1C', 1, 'N', 0, { busY: 1050 }],
+          ['H1', 1, 'N', 0, { busY: 1050 }],
+          ['H2', 1, 'N', 0, { busY: 1050 }],
+          ['HA1', 1, 'N', 0, { busY: 1050 }]
         ]
       )
     },
@@ -551,10 +683,10 @@
         { code: 'Terminal 87', desc: 'Keluaran kontak NO menuju beban (Lampu / Klakson / Motor DC)' }
       ],
       steps: [
-        'Pasang sumber positif DC (+12V) di sisi atas dan Negatif/Massa (-) di sisi bawah.',
+        'Pasang Baterai 12V (kutub + di atas, - di bawah) di sisi kiri kanvas.',
         'Pasang Sekring (-F1) dari jalur +12V, lalu cabang ke Saklar Kontrol (-S1) dan ke Terminal 30 Kontak NO Relay (-K1).',
-        'Hubungkan keluaran Saklar Kontrol (-S1) ke Terminal 85 Koil Relay (-K1), lalu Terminal 86 ke Massa (-).',
-        'Hubungkan Terminal 87 Kontak NO Relay (-K1) ke Lampu Beban (-H1), lalu keluaran lampu ke Massa (-).',
+        'Hubungkan keluaran Saklar Kontrol (-S1) ke Terminal 85 Koil Relay (-K1), lalu Terminal 86 ke jalur Massa (-).',
+        'Hubungkan Terminal 87 Kontak NO Relay (-K1) ke Lampu Beban (-H1), lalu keluaran lampu kembali ke kutub Massa (-) Baterai.',
         'Jalankan simulasi (RUN) dan aktifkan Saklar (-S1) untuk mengamati aliran arus kontrol dan arus daya secara terpisah.'
       ],
       checks: [
@@ -563,28 +695,33 @@
         'Jika Sekring (-F1) dibuka/diputus, seluruh jalur kontrol dan daya terisolasi aman.'
       ],
       allowedComponents: [
-        'sourcePlus', 'sourceNegative', 'battery', 'fuse1p', 'switchNO',
+        'battery', 'sourcePlus', 'sourceNegative', 'fuse1p', 'switchNO',
         'buttonNO', 'coil', 'contactNO', 'lamp', 'motorDC', 'junction3p'
       ],
       exampleCircuit: buildModuleCircuit(
         'Contoh OTO-01: Dasar Relay 4-Kaki 12V',
         [
-          { ref: 'P12', svgData: 'sourcePlus', x: 270, y: 60, rotation: 2 },
-          { ref: 'F1', svgData: 'fuse1p', x: 270, y: 180, tag: '-F1', comment: 'Sekring 15A' },
-          { ref: 'S1', svgData: 'switchNO', x: 270, y: 360, tag: '-S1', comment: 'Saklar Kontrol' },
-          { ref: 'K1C', svgData: 'coil', x: 270, y: 540, tag: '-K1', comment: 'Koil Relay 85-86', terminalTags: ['85', '86'] },
-          { ref: 'K1N', svgData: 'contactNO', x: 510, y: 360, tag: '-K1', comment: 'Kontak Daya 30-87', terminalTags: ['30', '87'] },
-          { ref: 'H1', svgData: 'lamp', x: 510, y: 540, tag: '-H1', comment: 'Beban Lampu 12V', lampColor: 'yellow' },
-          { ref: 'NEG', svgData: 'sourceNegative', x: 390, y: 720, rotation: 0 }
+          { svgData: 'text', x: 420, y: 30, comment: 'OTO-01: RELAY OTOMOTIF 4-KAKI (30-85-86-87) DC 12V', fontSize: 17, textColor: '#fbbf24' },
+          { svgData: 'text', x: 360, y: 295, comment: 'KONTROL (85-86)', fontSize: 13, textColor: '#38bdf8' },
+          { svgData: 'text', x: 600, y: 295, comment: 'DAYA BEBAN (30-87)', fontSize: 13, textColor: '#34d399' },
+
+          { ref: 'BAT', svgData: 'battery', x: 90, y: 450, rotation: 0, tag: '12V', comment: 'Aki 12V', terminalTags: ['+', '-'] },
+          { ref: 'F1', svgData: 'fuse1p', x: 210, y: 210, tag: '-F1', comment: 'Sekring 15A', terminalTags: ['1', '2'] },
+
+          { ref: 'S1', svgData: 'switchNO', x: 360, y: 420, tag: '-S1', comment: 'Saklar Kontrol', terminalTags: ['1', '2'] },
+          { ref: 'K1C', svgData: 'coil', x: 360, y: 600, tag: '-K1', comment: 'Koil 85-86', terminalTags: ['85', '86'] },
+
+          { ref: 'K1N', svgData: 'contactNO', x: 600, y: 420, tag: '-K1', comment: 'Kontak 30-87', terminalTags: ['30', '87'] },
+          { ref: 'H1', svgData: 'lamp', x: 600, y: 600, tag: '-H1', comment: 'Beban 12V', lampColor: 'yellow', terminalTags: ['+', '31'] }
         ],
         [
-          ['P12', 0, 'F1', 0],
-          ['F1', 1, 'S1', 0],
-          ['F1', 1, 'K1N', 0],
+          ['BAT', 0, 'F1', 0, { busY: 90 }],
+          ['F1', 1, 'S1', 0, { busY: 330 }],
+          ['F1', 1, 'K1N', 0, { busY: 330 }],
           ['S1', 1, 'K1C', 0],
           ['K1N', 1, 'H1', 0],
-          ['K1C', 1, 'NEG', 0],
-          ['H1', 1, 'NEG', 0]
+          ['K1C', 1, 'BAT', 1, { busY: 720 }],
+          ['H1', 1, 'BAT', 1, { busY: 720 }]
         ]
       )
     },
@@ -619,10 +756,10 @@
         { code: 'PB -S1', desc: 'Tombol Klakson Setir (Push Button NO menuju Massa -)' }
       ],
       steps: [
-        'Pasang sumber +12V dan Sekring (-F1) di bagian atas, serta Massa (-) di bagian bawah.',
+        'Pasang Baterai 12V di sisi kiri dan Sekring Klakson (-F1) di jalur +12V atas.',
         'Sambungkan keluaran Sekring (-F1) ke terminal 85 Koil Relay (-K1) dan terminal 30 Kontak NO (-K1).',
-        'Sambungkan terminal 86 Koil Relay (-K1) ke masukan Tombol Klakson (-S1), lalu keluaran -S1 ke Massa (-).',
-        'Sambungkan terminal 87 Kontak NO (-K1) ke Klakson/Buzzer (-HA1) dan lampu indikator uji (-H1), lalu keluaran ke Massa (-).',
+        'Sambungkan terminal 86 Koil Relay (-K1) ke masukan Tombol Klakson (-S1), lalu keluaran -S1 ke jalur Massa (-).',
+        'Sambungkan terminal 87 Kontak NO (-K1) ke Klakson/Buzzer (-HA1) dan lampu indikator uji (-H1), lalu keluaran kembali ke kutub Massa (-) Baterai.',
         'Tekan RUN, lalu tekan dan tahan tombol klakson (-S1) untuk menguji aktivasi relay dan bunyi klakson!'
       ],
       checks: [
@@ -631,31 +768,36 @@
         'Saat tombol -S1 dilepas, koil relay langsung terputus dan klakson segera berhenti berbunyi.'
       ],
       allowedComponents: [
-        'sourcePlus', 'sourceNegative', 'battery', 'fuse1p', 'buttonNO',
+        'battery', 'sourcePlus', 'sourceNegative', 'fuse1p', 'buttonNO',
         'coil', 'contactNO', 'buzzer', 'siren', 'ring', 'lamp', 'junction3p'
       ],
       exampleCircuit: buildModuleCircuit(
         'Contoh OTO-02: Klakson Relay Ground-Side',
         [
-          { ref: 'P12', svgData: 'sourcePlus', x: 270, y: 60, rotation: 2 },
-          { ref: 'F1', svgData: 'fuse1p', x: 270, y: 180, tag: '-F1', comment: 'Fuse Klakson' },
-          { ref: 'K1C', svgData: 'coil', x: 270, y: 360, tag: '-K1', comment: 'Koil Relay 85-86', terminalTags: ['85', '86'] },
-          { ref: 'S1', svgData: 'buttonNO', x: 270, y: 540, tag: '-S1', comment: 'Tombol Setir (Massa)' },
-          { ref: 'K1N', svgData: 'contactNO', x: 510, y: 360, tag: '-K1', comment: 'Kontak 30-87', terminalTags: ['30', '87'] },
-          { ref: 'HA1', svgData: 'buzzer', x: 480, y: 540, tag: '-HA1', comment: 'Klakson' },
-          { ref: 'H1', svgData: 'lamp', x: 630, y: 540, tag: '-H1', comment: 'Indikator Uji', lampColor: 'yellow' },
-          { ref: 'NEG', svgData: 'sourceNegative', x: 450, y: 720, rotation: 0 }
+          { svgData: 'text', x: 480, y: 30, comment: 'OTO-02: KLAKSON RELAY (GROUND-SIDE SWITCHING)', fontSize: 17, textColor: '#fbbf24' },
+          { svgData: 'text', x: 360, y: 295, comment: 'KONTROL SETIR (MASSA)', fontSize: 13, textColor: '#38bdf8' },
+          { svgData: 'text', x: 690, y: 295, comment: 'DAYA KLAKSON (30-87)', fontSize: 13, textColor: '#34d399' },
+
+          { ref: 'BAT', svgData: 'battery', x: 90, y: 450, rotation: 0, tag: '12V', comment: 'Aki 12V', terminalTags: ['+', '-'] },
+          { ref: 'F1', svgData: 'fuse1p', x: 210, y: 210, tag: '-F1', comment: 'Fuse Klakson', terminalTags: ['1', '2'] },
+
+          { ref: 'K1C', svgData: 'coil', x: 360, y: 420, tag: '-K1', comment: 'Koil 85-86', terminalTags: ['85', '86'] },
+          { ref: 'S1', svgData: 'buttonNO', x: 360, y: 600, tag: '-S1', comment: 'Tombol Setir', terminalTags: ['86', '31'] },
+
+          { ref: 'K1N', svgData: 'contactNO', x: 600, y: 420, tag: '-K1', comment: 'Kontak 30-87', terminalTags: ['30', '87'] },
+          { ref: 'HA1', svgData: 'buzzer', x: 600, y: 600, tag: '-HA1', comment: 'Klakson', terminalTags: ['+', '31'] },
+          { ref: 'H1', svgData: 'lamp', x: 780, y: 600, tag: '-H1', comment: 'Indikator', lampColor: 'yellow', terminalTags: ['+', '31'] }
         ],
         [
-          ['P12', 0, 'F1', 0],
-          ['F1', 1, 'K1C', 0],
-          ['F1', 1, 'K1N', 0],
+          ['BAT', 0, 'F1', 0, { busY: 90 }],
+          ['F1', 1, 'K1C', 0, { busY: 330 }],
+          ['F1', 1, 'K1N', 0, { busY: 330 }],
           ['K1C', 1, 'S1', 0],
           ['K1N', 1, 'HA1', 0],
-          ['K1N', 1, 'H1', 0],
-          ['S1', 1, 'NEG', 0],
-          ['HA1', 1, 'NEG', 0],
-          ['H1', 1, 'NEG', 0]
+          ['K1N', 1, 'H1', 0, { busY: 510 }],
+          ['S1', 1, 'BAT', 1, { busY: 720 }],
+          ['HA1', 1, 'BAT', 1, { busY: 720 }],
+          ['H1', 1, 'BAT', 1, { busY: 720 }]
         ]
       )
     },
@@ -690,7 +832,7 @@
         { code: 'Dioda -D1 / -D2', desc: 'Dioda isolasi satu arah pencegah arus balik antara kiri dan kanan' }
       ],
       steps: [
-        'Pasang sumber +12V -> Sekring (-F1) menuju Koil Flasher (-FL1) dan Kontak NO Flasher (-FL1).',
+        'Pasang Baterai 12V -> Sekring (-F1) menuju Koil Flasher (-FL1) dan Kontak NO Flasher (-FL1).',
         'Hubungkan keluaran Kontak Flasher (-FL1) menuju Pin 1 Saklar Sein (-S1) dan masukan Saklar Hazard (-S2).',
         'Hubungkan Pin 2 Saklar Sein (-S1) ke Lampu Sein Kiri (-HL) dan Pin 3 ke Lampu Sein Kanan (-HR).',
         'Hubungkan keluaran Saklar Hazard (-S2) melalui Dioda -D1 ke Lampu Sein Kiri (-HL), dan melalui Dioda -D2 ke Lampu Sein Kanan (-HR).',
@@ -702,39 +844,51 @@
         'Saat Saklar Hazard (-S2) ON, kedua lampu sein (-HL dan -HR) berkedip serempak.'
       ],
       allowedComponents: [
-        'sourcePlus', 'sourceNegative', 'battery', 'fuse1p', 'coilFlasher',
+        'battery', 'sourcePlus', 'sourceNegative', 'fuse1p', 'coilFlasher',
         'flasher', 'contactNO', 'switch3p0', 'switchNO', 'diode', 'lamp', 'lampBlink', 'junction3p'
       ],
       exampleCircuit: buildModuleCircuit(
         'Contoh OTO-03: Lampu Sein & Hazard',
         [
-          { ref: 'P12', svgData: 'sourcePlus', x: 330, y: 60, rotation: 2 },
-          { ref: 'F1', svgData: 'fuse1p', x: 330, y: 180, tag: '-F1', comment: 'Fuse Sein' },
-          { ref: 'FLC', svgData: 'coilFlasher', x: 180, y: 360, tag: '-FL1', comment: 'Flasher Unit', valueTimeOn: 1, valueTimeOff: 1 },
-          { ref: 'FLN', svgData: 'contactNO', x: 450, y: 300, tag: '-FL1', comment: 'Pulsa Flasher' },
-          { ref: 'S1', svgData: 'switch3p0', x: 360, y: 480, tag: '-S1', comment: 'Saklar Sein L-0-R' },
-          { ref: 'S2', svgData: 'switchNO', x: 660, y: 450, tag: '-S2', comment: 'Saklar Hazard' },
-          { ref: 'D1', svgData: 'diode', x: 570, y: 600, tag: '-D1', comment: 'Dioda Kiri' },
-          { ref: 'D2', svgData: 'diode', x: 720, y: 600, tag: '-D2', comment: 'Dioda Kanan' },
-          { ref: 'HL', svgData: 'lamp', x: 300, y: 750, tag: '-HL', comment: 'Sein Kiri', lampColor: 'yellow' },
-          { ref: 'HR', svgData: 'lamp', x: 540, y: 750, tag: '-HR', comment: 'Sein Kanan', lampColor: 'yellow' },
-          { ref: 'NEG', svgData: 'sourceNegative', x: 360, y: 900, rotation: 0 }
+          { svgData: 'text', x: 540, y: 30, comment: 'OTO-03: SISTEM LAMPU SEIN & HAZARD (FLASHER + DIODA)', fontSize: 17, textColor: '#fbbf24' },
+          { svgData: 'text', x: 345, y: 480, comment: 'UNIT FLASHER', fontSize: 12, textColor: '#94a3b8' },
+          { svgData: 'text', x: 360, y: 570, comment: 'SEIN L-0-R', fontSize: 12, textColor: '#38bdf8' },
+          { svgData: 'text', x: 840, y: 390, comment: 'HAZARD (DIODA ISOLASI)', fontSize: 13, textColor: '#f87171' },
+
+          { ref: 'BAT', svgData: 'battery', x: 90, y: 540, rotation: 0, tag: '12V', comment: 'Aki 12V', terminalTags: ['+', '-'] },
+          { ref: 'F1', svgData: 'fuse1p', x: 240, y: 180, tag: '-F1', comment: 'Fuse Sein', terminalTags: ['1', '2'] },
+
+          // Kolom 1 (x=240): Koil Flasher lurus ke rel massa bawah (0 persilangan!)
+          { ref: 'FLC', svgData: 'coilFlasher', x: 240, y: 480, tag: '-FL1', comment: 'Flasher', valueTimeOn: 1, valueTimeOff: 1, terminalTags: ['B', 'E'] },
+
+          // Kolom 2 (x=480): Pulsa Flasher -> Saklar Sein 3-Posisi (pin kiri=420, kanan=540 lurus langsung ke lampu!)
+          { ref: 'FLN', svgData: 'contactNO', x: 480, y: 330, tag: '-FL1', comment: 'Pulsa Flasher', terminalTags: ['B', 'L'] },
+          { ref: 'S1', svgData: 'switch3p0', x: 480, y: 570, tag: '-S1', comment: 'Saklar Sein', terminalTags: ['49a', 'L', 'R'] },
+
+          // Kolom 3 (x=840): Saklar Hazard -> 2 Dioda sejajar
+          { ref: 'S2', svgData: 'switchNO', x: 840, y: 540, tag: '-S2', comment: 'Hazard', terminalTags: ['49a', 'HZ'] },
+          { ref: 'D1', svgData: 'diode', x: 750, y: 720, tag: '-D1', comment: 'Dioda Kiri', terminalTags: ['A', 'K'] },
+          { ref: 'D2', svgData: 'diode', x: 930, y: 720, tag: '-D2', comment: 'Dioda Kanan', terminalTags: ['A', 'K'] },
+
+          // Baris Lampu Sein tepat lurus di bawah pin S1 (420 & 540)
+          { ref: 'HL', svgData: 'lamp', x: 420, y: 930, tag: '-HL', comment: 'Sein Kiri', lampColor: 'yellow', terminalTags: ['L', '31'] },
+          { ref: 'HR', svgData: 'lamp', x: 540, y: 930, tag: '-HR', comment: 'Sein Kanan', lampColor: 'yellow', terminalTags: ['R', '31'] }
         ],
         [
-          ['P12', 0, 'F1', 0],
+          ['BAT', 0, 'F1', 0, { busY: 90 }],
           ['F1', 1, 'FLC', 0],
-          ['F1', 1, 'FLN', 0],
-          ['FLC', 1, 'NEG', 0],
+          ['F1', 1, 'FLN', 0, { busY: 240 }],
           ['FLN', 1, 'S1', 0],
-          ['FLN', 1, 'S2', 0],
+          ['FLN', 1, 'S2', 0, { busY: 420 }],
           ['S1', 1, 'HL', 0],
           ['S1', 2, 'HR', 0],
-          ['S2', 1, 'D1', 0],
-          ['S2', 1, 'D2', 0],
-          ['D1', 1, 'HL', 0],
-          ['D2', 1, 'HR', 0],
-          ['HL', 1, 'NEG', 0],
-          ['HR', 1, 'NEG', 0]
+          ['S2', 1, 'D1', 0, { busY: 630 }],
+          ['S2', 1, 'D2', 0, { busY: 630 }],
+          ['D1', 1, 'HL', 0, { busY: 810 }],
+          ['D2', 1, 'HR', 0, { busY: 840 }],
+          ['FLC', 1, 'BAT', 1, { busY: 1050 }],
+          ['HL', 1, 'BAT', 1, { busY: 1050 }],
+          ['HR', 1, 'BAT', 1, { busY: 1050 }]
         ]
       )
     },
@@ -769,7 +923,7 @@
         { code: 'Pin 87 / 14 (-K2)', desc: 'Kontak NO Relay Dimmer -> Lampu Jauh (High Beam) + Indikator Biru' }
       ],
       steps: [
-        'Pasang sumber +12V -> Sekring (-F1) menuju jalur kontrol dan kontak daya Relay Utama (-K1).',
+        'Pasang Baterai 12V -> Sekring (-F1) menuju jalur kontrol dan kontak daya Relay Utama (-K1).',
         'Rangkai jalur kontrol utama: Saklar Lampu (-S1) -> Koil -K1 -> Massa (-).',
         'Rangkai jalur kontrol dimmer: dari keluaran -S1 -> Saklar Dimmer (-S2) -> Koil -K2 -> Massa (-).',
         'Hubungkan keluaran Kontak NO -K1 menuju terminal Common (11/30) Kontak Changeover -K2 (`contactCON`).',
@@ -781,43 +935,50 @@
         'Saat -S1 ON dan Dimmer (-S2) ON, Lampu Dekat padam otomatis, Lampu Jauh (-HHI) dan Indikator Biru (-HBI) menyala.'
       ],
       allowedComponents: [
-        'sourcePlus', 'sourceNegative', 'battery', 'fuse1p', 'switchNO',
+        'battery', 'sourcePlus', 'sourceNegative', 'fuse1p', 'switchNO',
         'switchCON', 'coil', 'contactNO', 'contactCON', 'lamp', 'junction3p'
       ],
       exampleCircuit: buildModuleCircuit(
         'Contoh OTO-04: Headlamp Hi-Lo Relay 5-Kaki',
         [
-          { ref: 'P12', svgData: 'sourcePlus', x: 330, y: 60, rotation: 2 },
-          { ref: 'F1', svgData: 'fuse1p', x: 330, y: 180, tag: '-F1', comment: 'Fuse Headlamp' },
-          // Kontrol Utama & Dimmer
-          { ref: 'S1', svgData: 'switchNO', x: 180, y: 330, tag: '-S1', comment: 'Saklar Lampu' },
-          { ref: 'K1C', svgData: 'coil', x: 180, y: 540, tag: '-K1', comment: 'Relay Utama' },
-          { ref: 'S2', svgData: 'switchNO', x: 360, y: 450, tag: '-S2', comment: 'Tuas Dimmer HI' },
-          { ref: 'K2C', svgData: 'coil', x: 360, y: 630, tag: '-K2', comment: 'Relay Dimmer' },
-          // Daya Headlamp
-          { ref: 'K1N', svgData: 'contactNO', x: 630, y: 300, tag: '-K1', comment: 'Kontak Utama' },
-          { ref: 'K2C5', svgData: 'contactCON', x: 630, y: 480, tag: '-K2', comment: 'Changeover 5-Kaki', terminalTags: ['30', '87a', '87'] },
-          { ref: 'HLO', svgData: 'lamp', x: 540, y: 690, tag: '-HLO', comment: 'Low Beam', lampColor: 'yellow' },
-          { ref: 'HHI', svgData: 'lamp', x: 690, y: 690, tag: '-HHI', comment: 'High Beam', lampColor: 'green' },
-          { ref: 'HBI', svgData: 'lamp', x: 810, y: 690, tag: '-HBI', comment: 'Indikator HI', lampColor: 'blue' },
-          { ref: 'NEG', svgData: 'sourceNegative', x: 510, y: 870, rotation: 0 }
+          { svgData: 'text', x: 600, y: 30, comment: 'OTO-04: HEADLAMP HI/LO BEAM (RELAY UTAMA & DIMMER 5-KAKI)', fontSize: 17, textColor: '#fbbf24' },
+          { svgData: 'text', x: 450, y: 295, comment: 'KONTROL SAKLAR & DIMMER', fontSize: 13, textColor: '#38bdf8' },
+          { svgData: 'text', x: 870, y: 295, comment: 'DAYA HEADLAMP (LOW / HIGH BEAM)', fontSize: 13, textColor: '#34d399' },
+
+          { ref: 'BAT', svgData: 'battery', x: 90, y: 540, rotation: 0, tag: '12V', comment: 'Aki 12V', terminalTags: ['+', '-'] },
+          { ref: 'F1', svgData: 'fuse1p', x: 210, y: 180, tag: '-F1', comment: 'Fuse Headlamp', terminalTags: ['1', '2'] },
+
+          // Kontrol Utama & Dimmer (koil sejajar di y=780 bersama lampu!)
+          { ref: 'S1', svgData: 'switchNO', x: 330, y: 420, tag: '-S1', comment: 'Saklar Utama', terminalTags: ['30', '56'] },
+          { ref: 'K1C', svgData: 'coil', x: 330, y: 780, tag: '-K1', comment: 'Relay Utama', terminalTags: ['85', '86'] },
+          { ref: 'S2', svgData: 'switchNO', x: 540, y: 600, tag: '-S2', comment: 'Dimmer HI', terminalTags: ['56', '56a'] },
+          { ref: 'K2C', svgData: 'coil', x: 540, y: 780, tag: '-K2', comment: 'Relay Dimmer', terminalTags: ['85', '86'] },
+
+          // Daya Headlamp (lurus ke 3 lampu sejajar di y=780)
+          { ref: 'K1N', svgData: 'contactNO', x: 840, y: 420, tag: '-K1', comment: 'Kontak Utama', terminalTags: ['30', '87'] },
+          { ref: 'K2C5', svgData: 'contactCON', x: 840, y: 600, tag: '-K2', comment: 'Relay 5-Kaki', terminalTags: ['30', '87a', '87'] },
+
+          { ref: 'HLO', svgData: 'lamp', x: 750, y: 780, tag: '-HLO', comment: 'Low Beam', lampColor: 'yellow', terminalTags: ['56b', '31'] },
+          { ref: 'HHI', svgData: 'lamp', x: 930, y: 780, tag: '-HHI', comment: 'High Beam', lampColor: 'green', terminalTags: ['56a', '31'] },
+          { ref: 'HBI', svgData: 'lamp', x: 1080, y: 780, tag: '-HBI', comment: 'Ind. HI', lampColor: 'blue', terminalTags: ['56a', '31'] }
         ],
         [
-          ['P12', 0, 'F1', 0],
-          ['F1', 1, 'S1', 0],
-          ['F1', 1, 'K1N', 0],
+          ['BAT', 0, 'F1', 0, { busY: 90 }],
+          ['F1', 1, 'S1', 0, { busY: 330 }],
+          ['F1', 1, 'K1N', 0, { busY: 330 }],
           ['S1', 1, 'K1C', 0],
-          ['S1', 1, 'S2', 0],
+          ['S1', 1, 'S2', 0, { busY: 510 }],
           ['S2', 1, 'K2C', 0],
           ['K1N', 1, 'K2C5', 0],
-          ['K2C5', 1, 'HLO', 0],
-          ['K2C5', 2, 'HHI', 0],
-          ['K2C5', 2, 'HBI', 0],
-          ['K1C', 1, 'NEG', 0],
-          ['K2C', 1, 'NEG', 0],
-          ['HLO', 1, 'NEG', 0],
-          ['HHI', 1, 'NEG', 0],
-          ['HBI', 1, 'NEG', 0]
+          ['K2C5', 1, 'HLO', 0, { busY: 690 }],
+          ['K2C5', 2, 'HHI', 0, { busY: 690 }],
+          ['K2C5', 2, 'HBI', 0, { busY: 690 }],
+          // Rel Massa tunggal super lurus di y=900
+          ['K1C', 1, 'BAT', 1, { busY: 900 }],
+          ['K2C', 1, 'BAT', 1, { busY: 900 }],
+          ['HLO', 1, 'BAT', 1, { busY: 900 }],
+          ['HHI', 1, 'BAT', 1, { busY: 900 }],
+          ['HBI', 1, 'BAT', 1, { busY: 900 }]
         ]
       )
     },
@@ -853,7 +1014,7 @@
         { code: 'Motor DC (-M1/-M2)', desc: 'Aktuator Motor Starter (-M1) dan Motor Wiper (-M2) bersuplai DC' }
       ],
       steps: [
-        'Pasang sumber +12V di sisi atas dan Massa (-) di sisi bawah.',
+        'Pasang Baterai 12V di sisi kiri sebagai sumber utama +12V (atas) dan Massa - (bawah).',
         'Bangun jalur daya Starter: +12V langsung menuju Kontak Daya 1P (-KM1) -> Motor Starter DC (-M1) -> Massa (-).',
         'Bangun jalur kontrol Starter: +12V -> Sekring (-F1) -> Kunci Kontak IG (-IG) -> Tombol START (-ST) -> Koil Solenoid (-KM1) -> Massa (-).',
         'Bangun jalur Wiper dari keluaran Kunci Kontak (-IG) -> Saklar Wiper (-SW) -> Motor Wiper DC (-M2) + Lampu Indikator (-H1) -> Massa (-).',
@@ -865,42 +1026,51 @@
         'Saat -IG ON dan Saklar Wiper (-SW) ON, Motor Wiper DC (-M2) berputar stabil dan berhenti saat -SW dimatikan.'
       ],
       allowedComponents: [
-        'sourcePlus', 'sourceNegative', 'battery', 'fuse1p', 'switchNO',
+        'battery', 'sourcePlus', 'sourceNegative', 'fuse1p', 'switchNO',
         'buttonNO', 'coilSolenoid', 'coil', 'contactor1p', 'contactNO',
         'motorDC', 'lamp', 'junction3p'
       ],
       exampleCircuit: buildModuleCircuit(
         'Contoh OTO-05: Motor Starter Solenoid & Wiper DC',
         [
-          { ref: 'P12', svgData: 'sourcePlus', x: 240, y: 60, rotation: 2 },
-          // Jalur Daya Starter (langsung baterai -> kontak solenoid -> Motor Starter)
-          { ref: 'KM1P', svgData: 'contactor1p', x: 180, y: 330, tag: '-KM1', comment: 'Kontak Solenoid 30-C' },
-          { ref: 'M1', svgData: 'motorDC', x: 180, y: 570, tag: '-M1', comment: 'Motor Starter' },
-          // Jalur Kontrol Kunci Kontak & Solenoid
-          { ref: 'F1', svgData: 'fuse1p', x: 450, y: 180, tag: '-F1', comment: 'Fuse IG/ST' },
-          { ref: 'IG', svgData: 'switchNO', x: 450, y: 330, tag: '-IG', comment: 'Kunci Kontak ON' },
-          { ref: 'ST', svgData: 'buttonNO', x: 420, y: 480, tag: '-ST', comment: 'Posisi START (50)' },
-          { ref: 'SOL', svgData: 'coilSolenoid', x: 420, y: 660, tag: '-KM1', comment: 'Solenoid Starter' },
-          // Jalur Wiper
-          { ref: 'SW', svgData: 'switchNO', x: 660, y: 450, tag: '-SW', comment: 'Saklar Wiper' },
-          { ref: 'M2', svgData: 'motorDC', x: 660, y: 660, tag: '-M2', comment: 'Motor Wiper DC' },
-          { ref: 'H1', svgData: 'lamp', x: 810, y: 660, tag: '-H1', comment: 'Indikator Wiper', lampColor: 'green' },
-          { ref: 'NEG', svgData: 'sourceNegative', x: 480, y: 840, rotation: 0 }
+          { svgData: 'text', x: 540, y: 15, comment: 'OTO-05: MOTOR STARTER (SOLENOID) & MOTOR WIPER DC', fontSize: 17, textColor: '#fbbf24' },
+          { svgData: 'text', x: 270, y: 60, comment: 'DAYA STARTER (30-C)', fontSize: 13, textColor: '#f87171' },
+          { svgData: 'text', x: 540, y: 60, comment: 'KUNCI KONTAK & SOLENOID', fontSize: 13, textColor: '#38bdf8' },
+          { svgData: 'text', x: 870, y: 445, comment: 'SISTEM WIPER DC', fontSize: 13, textColor: '#34d399' },
+          { svgData: 'text', x: 540, y: 945, comment: 'Aktifkan -IG, lalu tekan -ST (Starter) atau ON-kan -SW (Wiper)', fontSize: 13, textColor: '#94a3b8' },
+
+          { ref: 'BAT', svgData: 'battery', x: 90, y: 540, rotation: 0, tag: '12V', comment: 'Aki 12V', terminalTags: ['+', '-'] },
+
+          // Jalur 1 (x=270): Daya Starter langsung baterai (1 garis lurus!)
+          { ref: 'KM1P', svgData: 'contactor1p', x: 270, y: 420, tag: '-KM1', comment: 'Kontak 30-C', terminalTags: ['30', 'C'] },
+          { ref: 'M1', svgData: 'motorDC', x: 270, y: 720, tag: '-M1', comment: 'Motor Starter', terminalTags: ['C', '31'] },
+
+          // Jalur 2 (x=540): Fuse -> Kunci Kontak IG -> Tombol ST -> Solenoid (4 komponen 1 garis lurus!)
+          { ref: 'F1', svgData: 'fuse1p', x: 540, y: 210, tag: '-F1', comment: 'Fuse IG/ST', terminalTags: ['1', '2'] },
+          { ref: 'IG', svgData: 'switchNO', x: 540, y: 390, tag: '-IG', comment: 'Kunci Kontak', terminalTags: ['30', '15'] },
+          { ref: 'ST', svgData: 'buttonNO', x: 540, y: 570, tag: '-ST', comment: 'Start (50)', terminalTags: ['15', '50'] },
+          { ref: 'SOL', svgData: 'coilSolenoid', x: 540, y: 750, tag: '-KM1', comment: 'Solenoid', terminalTags: ['50', '31'] },
+
+          // Jalur 3 (x=780 & 960): Saklar Wiper -> Motor Wiper DC & Indikator
+          { ref: 'SW', svgData: 'switchNO', x: 780, y: 540, tag: '-SW', comment: 'Saklar Wiper', terminalTags: ['15', '53'] },
+          { ref: 'M2', svgData: 'motorDC', x: 780, y: 750, tag: '-M2', comment: 'Motor Wiper', terminalTags: ['53', '31'] },
+          { ref: 'H1', svgData: 'lamp', x: 960, y: 750, tag: '-H1', comment: 'Ind. Wiper', lampColor: 'green', terminalTags: ['+', '31'] }
         ],
         [
-          ['P12', 0, 'KM1P', 0],
-          ['P12', 0, 'F1', 0],
+          ['BAT', 0, 'KM1P', 0, { busY: 90 }],
+          ['BAT', 0, 'F1', 0, { busY: 90 }],
           ['KM1P', 1, 'M1', 0],
           ['F1', 1, 'IG', 0],
           ['IG', 1, 'ST', 0],
-          ['IG', 1, 'SW', 0],
+          ['IG', 1, 'SW', 0, { busY: 480 }],
           ['ST', 1, 'SOL', 0],
           ['SW', 1, 'M2', 0],
-          ['SW', 1, 'H1', 0],
-          ['M1', 1, 'NEG', 0],
-          ['SOL', 1, 'NEG', 0],
-          ['M2', 1, 'NEG', 0],
-          ['H1', 1, 'NEG', 0]
+          ['SW', 1, 'H1', 0, { busY: 630 }],
+          // Rel Massa tunggal super lurus di y=900
+          ['M1', 1, 'BAT', 1, { busY: 900 }],
+          ['SOL', 1, 'BAT', 1, { busY: 900 }],
+          ['M2', 1, 'BAT', 1, { busY: 900 }],
+          ['H1', 1, 'BAT', 1, { busY: 900 }]
         ]
       )
     }
@@ -1050,7 +1220,6 @@
       const next = list.filter((m) => m.id !== id);
       if (next.length === list.length) return false;
       this._writeCustomModules(next);
-      // Bersihkan progres modul yang dihapus
       const prog = this.getProgressMap();
       if (prog[id]) {
         delete prog[id];
