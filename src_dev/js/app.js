@@ -5433,6 +5433,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Dashboard Toggle Handlers
   function openDashboard() {
+    if (canvas && canvas.isSimulating && typeof canvas.stopSimulation === 'function') {
+      canvas.stopSimulation();
+    }
     if (projectManager) projectManager.autoSaveCurrent();
     renderProjectGrid();
     showModal(modalDashboard);
@@ -6780,6 +6783,9 @@ document.addEventListener('DOMContentLoaded', () => {
       btnPmOpenExample.addEventListener('click', () => {
         const mod = MashimurelayModules.getModuleById(activeDetailModuleId);
         if (!mod || !mod.exampleCircuit) return;
+        if (canvas && canvas.isSimulating && typeof canvas.stopSimulation === 'function') {
+          canvas.stopSimulation();
+        }
         const cloned = JSON.parse(JSON.stringify(mod.exampleCircuit));
         const projName = `Contoh: ${mod.title}`;
         if (projectManager) {
@@ -6798,6 +6804,9 @@ document.addEventListener('DOMContentLoaded', () => {
       btnPmStartPractice.addEventListener('click', () => {
         const mod = MashimurelayModules.getModuleById(activeDetailModuleId);
         if (!mod) return;
+        if (canvas && canvas.isSimulating && typeof canvas.stopSimulation === 'function') {
+          canvas.stopSimulation();
+        }
         const allowed = Array.isArray(mod.allowedComponents) ? mod.allowedComponents : [];
         const blankCircuit = {
           header: {
