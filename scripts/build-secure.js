@@ -68,7 +68,9 @@ const RESERVED_GLOBALS = [
   'MashimurelayPdfReport',
   'ReviewTabManager',
   'reviewTabManager',
-  'MashimurelayTheme'
+  'MashimurelayTheme',
+  'PRACTICAL_MODULES_DATA',
+  'MashimurelayModules'
 ];
 
 console.log('=================================================================');

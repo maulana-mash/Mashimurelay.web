@@ -77,14 +77,15 @@ const TauriBridge = {
     }
   },
 
-  async startClassroomServer(taskName, circuitContent, jobsheetBase64 = null, jobsheetFilename = null) {
+  async startClassroomServer(taskName, circuitContent, jobsheetBase64 = null, jobsheetFilename = null, modulesJson = null) {
     if (!this.isTauri()) return null;
     try {
       return await this.invoke('start_classroom_server', {
         taskName,
         circuitContent,
         jobsheetBase64,
-        jobsheetFilename
+        jobsheetFilename,
+        modulesJson
       });
     } catch (e) {
       console.error('Tauri startClassroomServer error:', e);

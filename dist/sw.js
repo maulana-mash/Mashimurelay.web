@@ -1,5 +1,5 @@
 // Mashimurelay Offline Service Worker
-const CACHE_NAME = 'mashimurelay-cache-v362-firewall-whitelist';
+const CACHE_NAME = 'mashimurelay-cache-v363-practical-modules';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -7,6 +7,7 @@ const ASSETS_TO_CACHE = [
   './css/style.css',
   './js/components_data.js',
   './js/examples_data.js',
+  './js/modules_data.js',
   './js/router.js',
   './js/engine.js',
   './js/sounds_data.js',

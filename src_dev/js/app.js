@@ -684,6 +684,9 @@ document.addEventListener('DOMContentLoaded', () => {
             circuit = parseLegacyCircuitTxt(res.content);
           }
           const baseName = res.file_name.replace(/\.[^/.]+$/, '');
+          if (typeof importTeacherModulesFromCircuit === 'function' && circuit) {
+            importTeacherModulesFromCircuit(circuit);
+          }
           if (projectManager && circuit) {
             projectManager.createNewProject(baseName, circuit);
           } else if (circuit) {
@@ -1106,6 +1109,21 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast(isEnabled ? `Kit Praktikum Guru "${kitName}" diterapkan! (${allowed.length} komponen)` : 'Pembatasan perpustakaan komponen dinonaktifkan.', true);
       });
     }
+
+    const btnSaveKitAsModule = document.getElementById('btnSaveKitAsModule');
+    if (btnSaveKitAsModule) {
+      btnSaveKitAsModule.addEventListener('click', () => {
+        const prefillTitle = (inputKitName && inputKitName.value.trim()) ? inputKitName.value.trim() : '';
+        const prefillAllowed = Array.from(tempKitSelected);
+        hideModal(modalAssignmentKit);
+        if (typeof window.openCustomModuleEditorModal === 'function') {
+          window.openCustomModuleEditorModal(null, {
+            title: prefillTitle,
+            allowedComponents: prefillAllowed
+          });
+        }
+      });
+    }
   }
 
   initAssignmentKitUI();
@@ -1368,6 +1386,42 @@ document.addEventListener('DOMContentLoaded', () => {
         name: circuitJson.assignmentKit.name || 'Kit Praktikum Guru',
         allowedComponents: circuitJson.assignmentKit.allowedComponents || []
       };
+    }
+    const attachedQrModules = typeof getSelectedTeacherTaskModules === 'function' ? getSelectedTeacherTaskModules() : [];
+    if (attachedQrModules.length > 0) {
+      // Versi ringkas tanpa exampleCircuit agar QR Code tetap ringan dan mudah dipindai
+      const compactMods = attachedQrModules.map(m => ({
+        id: m.id,
+        title: m.title,
+        track: m.track,
+        subject: m.subject,
+        level: m.level,
+        duration: m.duration,
+        author: m.author,
+        summary: m.summary,
+        objectives: m.objectives || [],
+        safetyK3: m.safetyK3 || [],
+        theory: m.theory || '',
+        steps: m.steps || [],
+        checks: m.checks || [],
+        allowedComponents: m.allowedComponents || []
+      }));
+      if (JSON.stringify(compactMods).length <= 3600) {
+        compactCircuit.customModules = compactMods;
+      } else {
+        // Jika terlalu banyak teks untuk QR statis, ambil metadata + kit saja
+        compactCircuit.customModules = compactMods.map(m => ({
+          id: m.id,
+          title: m.title,
+          track: m.track,
+          subject: m.subject,
+          author: m.author,
+          summary: (m.summary || '').slice(0, 180),
+          steps: (m.steps || []).slice(0, 6),
+          checks: (m.checks || []).slice(0, 5),
+          allowedComponents: m.allowedComponents || []
+        }));
+      }
     }
     if (Array.isArray(circuitJson.data)) {
       compactCircuit.data = circuitJson.data.map(item => {
@@ -1674,6 +1728,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function openTeacherTaskSetupModal(mode, customName) {
     pendingTaskDistributionMode = mode || 'qr';
     renderTeacherJobsheetUI();
+    if (typeof renderTeacherTaskModulesPicker === 'function') {
+      renderTeacherTaskModulesPicker();
+    }
     const curProj = projectManager ? projectManager.getActiveProject() : null;
     const defaultTaskName = customName || (curProj ? curProj.name : ((canvas && canvas.circuit && canvas.circuit.header && canvas.circuit.header.name) || 'Rangkaian Tugas Praktikum'));
     
@@ -1874,6 +1931,8 @@ document.addEventListener('DOMContentLoaded', () => {
     renderClassroomSubmissions([]);
 
     const hasJobsheet = Boolean(teacherJobsheetState.base64Data && teacherJobsheetState.filename);
+    const attachedHotspotModules = typeof getSelectedTeacherTaskModules === 'function' ? getSelectedTeacherTaskModules() : [];
+    const hasCustomModules = attachedHotspotModules.length > 0;
     const rawCircuit = {
       header: {
         generator: 'Mashimurelay',
@@ -1892,9 +1951,16 @@ document.addEventListener('DOMContentLoaded', () => {
         sizeBytes: hasJobsheet ? teacherJobsheetState.sizeBytes : 0,
         endpoint: hasJobsheet ? '/jobsheet.pdf' : null
       },
+      modulesMeta: {
+        available: hasCustomModules,
+        count: attachedHotspotModules.length,
+        endpoint: hasCustomModules ? '/modules.json' : null
+      },
+      customModules: hasCustomModules ? attachedHotspotModules : undefined,
       data: canvas.circuit ? canvas.circuit.data : []
     };
     const jsonString = JSON.stringify(rawCircuit, null, 2);
+    const modulesJsonString = hasCustomModules ? JSON.stringify(attachedHotspotModules) : null;
 
     try {
       showToast('Memulai server Hotspot guru...');
@@ -1902,7 +1968,8 @@ document.addEventListener('DOMContentLoaded', () => {
         taskName,
         jsonString,
         teacherJobsheetState.base64Data,
-        teacherJobsheetState.filename
+        teacherJobsheetState.filename,
+        modulesJsonString
       );
       if (!serverInfo) {
         showToast('Gagal menyalakan server Hotspot.');
@@ -2860,7 +2927,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Dismiss overlay when clicking outside
-  [modalSaveAs, modalTeacherTaskSetup, modalPdfStudentInfo, modalSettings, modalWhatsNew, modalInstructions, modalAbout, modalDashboard, modalQrExport, modalAssignmentKit, modalClassroomHotspot].forEach(m => {
+  [modalSaveAs, modalTeacherTaskSetup, modalPdfStudentInfo, modalSettings, modalWhatsNew, modalInstructions, modalAbout, modalDashboard, modalQrExport, modalAssignmentKit, modalClassroomHotspot, document.getElementById('modalPracticalModules'), document.getElementById('modalCustomModuleEditor')].forEach(m => {
     if (m) {
       m.addEventListener('click', (e) => {
         if (e.target === m) {
@@ -5179,6 +5246,9 @@ document.addEventListener('DOMContentLoaded', () => {
           const cSchool = circuit.school || (circuit.header && circuit.header.school);
           if (cClass) localStorage.setItem('mashimu_student_class', cClass);
           if (cSchool) localStorage.setItem('mashimu_student_school', cSchool);
+          if (typeof importTeacherModulesFromCircuit === 'function') {
+            importTeacherModulesFromCircuit(circuit);
+          }
         }
         if (projectManager && circuit) {
           projectManager.createNewProject(baseName, circuit);
@@ -6030,6 +6100,9 @@ document.addEventListener('DOMContentLoaded', () => {
             circuit = parseLegacyCircuitTxt(cliFile.content);
           }
           const baseName = cliFile.file_name.replace(/\.[^/.]+$/, '');
+          if (typeof importTeacherModulesFromCircuit === 'function' && circuit) {
+            importTeacherModulesFromCircuit(circuit);
+          }
           if (projectManager && circuit) {
             projectManager.createNewProject(baseName, circuit);
           } else if (circuit) {
@@ -6042,6 +6115,847 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }, 300);
   }
+
+  // =========================================================================
+  // Modul Praktikum SMK & Pembuat Modul Mandiri Guru
+  // =========================================================================
+  const selectedTeacherTaskModuleIds = new Set();
+
+  function getSelectedTeacherTaskModules() {
+    if (typeof MashimurelayModules === 'undefined') return [];
+    const customs = MashimurelayModules.getCustomModules();
+    return customs.filter(m => selectedTeacherTaskModuleIds.has(m.id));
+  }
+
+  function importTeacherModulesFromCircuit(circuit) {
+    if (!circuit || typeof MashimurelayModules === 'undefined') return 0;
+    const incoming = [];
+    if (Array.isArray(circuit.customModules)) {
+      circuit.customModules.forEach(m => { if (m && typeof m === 'object') incoming.push(m); });
+    }
+    if (circuit.customModule && typeof circuit.customModule === 'object') {
+      incoming.push(circuit.customModule);
+    }
+    if (incoming.length === 0) return 0;
+    const res = MashimurelayModules.upsertCustomModules(incoming);
+    if (res && res.total > 0) {
+      updatePracticalModulesBadges();
+      showToast(`${res.total} Modul Mandiri Guru otomatis tersimpan di menu Modul Praktikum!`, true);
+    }
+    return res ? res.total : 0;
+  }
+
+  function updatePracticalModulesBadges() {
+    if (typeof MashimurelayModules === 'undefined') return;
+    const stats = MashimurelayModules.getOverallStats();
+    const drawerBadge = document.getElementById('drawerModulesBadge');
+    const dashPill = document.getElementById('dashModulesProgressPill');
+    const headerPill = document.getElementById('pmHeaderProgressBadge');
+    const teacherTabCount = document.getElementById('pmTeacherTabCount');
+
+    if (drawerBadge) drawerBadge.textContent = String(stats.totalModules);
+    const pillText = `${stats.builtinCompleted} / ${stats.builtinTotal} Selesai${stats.customTotal > 0 ? ` · +${stats.customTotal} Guru` : ''}`;
+    if (dashPill) dashPill.textContent = pillText;
+    if (headerPill) headerPill.textContent = pillText;
+    if (teacherTabCount) teacherTabCount.textContent = String(stats.customTotal);
+  }
+
+  function renderTeacherTaskModulesPicker() {
+    const listEl = document.getElementById('teacherTaskModulesList');
+    const badgeEl = document.getElementById('teacherTaskModulesCountBadge');
+    if (!listEl || typeof MashimurelayModules === 'undefined') return;
+
+    const customs = MashimurelayModules.getCustomModules();
+    // Bersihkan ID yang sudah tidak ada
+    const validIds = new Set(customs.map(m => m.id));
+    Array.from(selectedTeacherTaskModuleIds).forEach(id => {
+      if (!validIds.has(id)) selectedTeacherTaskModuleIds.delete(id);
+    });
+
+    if (badgeEl) {
+      badgeEl.textContent = `${selectedTeacherTaskModuleIds.size} dipilih`;
+    }
+
+    if (customs.length === 0) {
+      listEl.innerHTML = `<div class="teacher-task-modules-empty">Belum ada Modul Mandiri Guru. Klik <strong>+ Buat Modul</strong> untuk menyusun modul praktikum Anda sendiri.</div>`;
+      return;
+    }
+
+    listEl.innerHTML = '';
+    customs.forEach(mod => {
+      const checked = selectedTeacherTaskModuleIds.has(mod.id);
+      const row = document.createElement('label');
+      row.className = `teacher-task-module-item ${checked ? 'is-selected' : ''}`;
+      const kitCnt = Array.isArray(mod.allowedComponents) ? mod.allowedComponents.length : 0;
+      const trackLabel = mod.track === 'industri' ? 'Industri' : (mod.track === 'otomotif' ? 'Otomotif' : 'Umum');
+      row.innerHTML = `
+        <input type="checkbox" ${checked ? 'checked' : ''} />
+        <div style="min-width: 0; flex: 1;">
+          <div style="font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(mod.title)}</div>
+          <div style="font-size: 10.5px; color: var(--text-secondary);">${escapeHtml(trackLabel)} · ${escapeHtml(mod.subject || 'Modul Guru')}${kitCnt > 0 ? ` · Kit ${kitCnt} komponen` : ''}</div>
+        </div>
+      `;
+      const cb = row.querySelector('input[type="checkbox"]');
+      cb.addEventListener('change', (e) => {
+        if (e.target.checked) {
+          selectedTeacherTaskModuleIds.add(mod.id);
+          row.classList.add('is-selected');
+        } else {
+          selectedTeacherTaskModuleIds.delete(mod.id);
+          row.classList.remove('is-selected');
+        }
+        if (badgeEl) badgeEl.textContent = `${selectedTeacherTaskModuleIds.size} dipilih`;
+      });
+      listEl.appendChild(row);
+    });
+  }
+
+  (function initPracticalModulesUI() {
+    if (typeof MashimurelayModules === 'undefined') return;
+
+    const drawerItemModules = document.getElementById('drawerItemModules');
+    const btnDashOpenModules = document.getElementById('btnDashOpenModules');
+    const modalPracticalModules = document.getElementById('modalPracticalModules');
+    const btnClosePracticalModules = document.getElementById('btnClosePracticalModules');
+    const btnOpenCustomModuleEditor = document.getElementById('btnOpenCustomModuleEditor');
+    const pmListView = document.getElementById('pmListView');
+    const pmDetailView = document.getElementById('pmDetailView');
+    const pmCardsGrid = document.getElementById('pmCardsGrid');
+    const pmSearchInput = document.getElementById('pmSearchInput');
+    const btnPmBackToList = document.getElementById('btnPmBackToList');
+    const pmDetailContent = document.getElementById('pmDetailContent');
+    const pmDetailOwnerActions = document.getElementById('pmDetailOwnerActions');
+    const btnPmEditCustom = document.getElementById('btnPmEditCustom');
+    const btnPmDeleteCustom = document.getElementById('btnPmDeleteCustom');
+    const btnPmWatchVideo = document.getElementById('btnPmWatchVideo');
+    const btnPmWatchVideoLabel = document.getElementById('btnPmWatchVideoLabel');
+    const btnPmWatchVideoSecondary = document.getElementById('btnPmWatchVideoSecondary');
+    const btnPmWatchVideoSecondaryLabel = document.getElementById('btnPmWatchVideoSecondaryLabel');
+    const btnPmOpenExample = document.getElementById('btnPmOpenExample');
+    const btnPmStartPractice = document.getElementById('btnPmStartPractice');
+    const btnPmStartPracticeLabel = document.getElementById('btnPmStartPracticeLabel');
+
+    // Custom Module Editor Elements
+    const modalCustomModuleEditor = document.getElementById('modalCustomModuleEditor');
+    const btnCloseCustomModuleEditor = document.getElementById('btnCloseCustomModuleEditor');
+    const btnCancelCustomModuleEditor = document.getElementById('btnCancelCustomModuleEditor');
+    const btnSaveCustomModule = document.getElementById('btnSaveCustomModule');
+    const customModuleEditorTitle = document.getElementById('customModuleEditorTitle');
+    const cmeModuleId = document.getElementById('cmeModuleId');
+    const cmeTitle = document.getElementById('cmeTitle');
+    const cmeTrack = document.getElementById('cmeTrack');
+    const cmeSubject = document.getElementById('cmeSubject');
+    const cmeAuthor = document.getElementById('cmeAuthor');
+    const cmeDuration = document.getElementById('cmeDuration');
+    const cmeSummary = document.getElementById('cmeSummary');
+    const cmeObjectives = document.getElementById('cmeObjectives');
+    const cmeSafety = document.getElementById('cmeSafety');
+    const cmeTheory = document.getElementById('cmeTheory');
+    const cmeSteps = document.getElementById('cmeSteps');
+    const cmeChecks = document.getElementById('cmeChecks');
+    const cmeAttachCurrentCircuit = document.getElementById('cmeAttachCurrentCircuit');
+    const cmeKitCount = document.getElementById('cmeKitCount');
+    const cmeKitSearch = document.getElementById('cmeKitSearch');
+    const cmeKitGrid = document.getElementById('cmeKitGrid');
+    const btnCmeCopyActiveKit = document.getElementById('btnCmeCopyActiveKit');
+    const btnCmeClearKit = document.getElementById('btnCmeClearKit');
+    const btnQuickCreateModuleFromTask = document.getElementById('btnQuickCreateModuleFromTask');
+
+    let activeTrackFilter = 'all';
+    let activeSearchQuery = '';
+    let activeDetailModuleId = null;
+    let cmeSelectedComponents = new Set();
+    let cmeExistingExampleCircuit = null;
+    let cmeReturnToTaskSetup = false;
+
+    const VIDEO_LABELS = {
+      dol_starter: 'Video: DOL Starter',
+      on_delay: 'Video: Timer On-Delay',
+      off_delay: 'Video: Timer Off-Delay',
+      thermal_overload: 'Video: Thermal Overload (TOR)',
+      short_circuit: 'Video: MCB Short Circuit',
+      klakson_relay: 'Video: Klakson Relay',
+      lampu_sein_flasher: 'Video: Lampu Sein & Flasher',
+      lampu_kepala_relay: 'Video: Headlamp Relay 5-Kaki',
+      motor_starter_bendix: 'Video: Motor Starter Solenoid',
+      wiper_auto_stop: 'Video: Wiper Auto-Stop',
+      pengapian_tci: 'Video: Pengapian TCI'
+    };
+
+    function getComponentDisplayName(key) {
+      if (typeof COMPONENTS_DATA !== 'undefined' && COMPONENTS_DATA[key] && COMPONENTS_DATA[key].name) {
+        return COMPONENTS_DATA[key].name;
+      }
+      return key;
+    }
+
+    function openVideoInInstructions(videoId) {
+      if (!videoId) return;
+      hideModal(modalPracticalModules);
+      showModal(modalInstructions);
+      if (typeof openInstructionsModal === 'function') {
+        openInstructionsModal();
+      }
+      const videoTab = document.querySelector('.inst-tab[data-tab="tabVideoSim"]');
+      if (videoTab) {
+        videoTab.click();
+      }
+      setTimeout(() => {
+        if (window.simVideoPlayer && typeof window.simVideoPlayer.loadVideo === 'function') {
+          window.simVideoPlayer.loadVideo(videoId);
+        }
+      }, 120);
+    }
+
+    function renderModulesGrid() {
+      if (!pmCardsGrid) return;
+      updatePracticalModulesBadges();
+
+      const allMods = MashimurelayModules.getAllModules();
+      const q = activeSearchQuery.trim().toLowerCase();
+
+      const filtered = allMods.filter(mod => {
+        if (activeTrackFilter === 'guru') {
+          if (mod.isBuiltin) return false;
+        } else if (activeTrackFilter !== 'all') {
+          if (mod.track !== activeTrackFilter) return false;
+        }
+        if (q) {
+          const hay = [
+            mod.code, mod.title, mod.subject, mod.author, mod.summary, mod.theory,
+            ...(mod.allowedComponents || []).map(getComponentDisplayName)
+          ].join(' ').toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        if (activeTrackFilter === 'guru' && !q) {
+          pmCardsGrid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 40px 20px; border: 1px dashed var(--border-color); border-radius: 10px; color: var(--text-secondary);">
+              <div style="font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Belum Ada Modul Mandiri Guru</div>
+              <div style="font-size: 12px; max-width: 440px; margin: 0 auto 14px auto; line-height: 1.5;">
+                Buat modul praktikum Anda sendiri (atau terima modul dari QR Tugas Guru). Modul guru tersimpan lokal di perangkat dan bisa dilampirkan sekaligus pada penugasan siswa.
+              </div>
+              <button type="button" id="btnEmptyCreateTeacherMod" class="btn btn-sm btn-primary" style="font-weight: 600;">+ Buat Modul Mandiri Pertama</button>
+            </div>
+          `;
+          const btnEmpty = document.getElementById('btnEmptyCreateTeacherMod');
+          if (btnEmpty) {
+            btnEmpty.addEventListener('click', () => openCustomModuleEditorModal(null));
+          }
+        } else {
+          pmCardsGrid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 36px 20px; color: var(--text-muted); font-size: 13px;">
+              Tidak ditemukan modul yang cocok dengan filter atau kata kunci pencarian.
+            </div>
+          `;
+        }
+        return;
+      }
+
+      pmCardsGrid.innerHTML = '';
+      filtered.forEach(mod => {
+        const comp = MashimurelayModules.getModuleCompletion(mod);
+        const card = document.createElement('div');
+        card.className = `pm-card ${comp.completed ? 'is-completed' : ''}`;
+
+        const badgeClass = !mod.isBuiltin
+          ? 'is-guru'
+          : (mod.track === 'otomotif' ? 'is-otomotif' : 'is-industri');
+        const badgeText = !mod.isBuiltin
+          ? (mod.track === 'industri' ? 'Modul Guru · Industri' : (mod.track === 'otomotif' ? 'Modul Guru · Otomotif' : 'Modul Guru'))
+          : (mod.track === 'otomotif' ? 'Otomotif · TKR/TSM' : 'Industri · TITL');
+
+        const kitCount = Array.isArray(mod.allowedComponents) ? mod.allowedComponents.length : 0;
+        const progressLabel = comp.total > 0
+          ? (comp.completed ? `Selesai (${comp.done}/${comp.total})` : `Ceklis ${comp.done}/${comp.total}`)
+          : 'Siap Dipelajari';
+
+        card.innerHTML = `
+          <div style="display: flex; flex-direction: column; gap: 7px;">
+            <div class="pm-card-top">
+              <span class="pm-track-badge ${badgeClass}">${escapeHtml(badgeText)}</span>
+              <span class="pm-card-code">${escapeHtml(mod.code || 'MOD')}</span>
+            </div>
+            <div class="pm-card-title">${escapeHtml(mod.title)}</div>
+            <div class="pm-card-summary">${escapeHtml(mod.summary || mod.theory || 'Panduan praktikum simulasi rangkaian.')}</div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div class="pm-card-meta">
+              <span>${escapeHtml(mod.level || 'Mandiri')}</span>
+              <span>·</span>
+              <span>${escapeHtml(mod.duration || '45 Menit')}</span>
+              ${kitCount > 0 ? `<span>·</span><span>Kit ${kitCount} komp.</span>` : ''}
+            </div>
+            <div class="pm-card-footer">
+              <span class="pm-progress-chip ${comp.completed ? 'is-done' : ''}">${escapeHtml(progressLabel)}</span>
+              <div class="pm-card-actions">
+                ${!mod.isBuiltin ? `
+                  <button type="button" class="pm-card-mini-btn btn-card-edit-mod" data-id="${escapeHtml(mod.id)}">Edit</button>
+                  <button type="button" class="pm-card-mini-btn is-danger btn-card-del-mod" data-id="${escapeHtml(mod.id)}">Hapus</button>
+                ` : `<span style="font-size: 11px; font-weight: 600; color: var(--accent-primary);">Buka &rarr;</span>`}
+              </div>
+            </div>
+          </div>
+        `;
+
+        card.addEventListener('click', (e) => {
+          if (e.target.closest('.btn-card-edit-mod')) {
+            e.stopPropagation();
+            openCustomModuleEditorModal(mod);
+            return;
+          }
+          if (e.target.closest('.btn-card-del-mod')) {
+            e.stopPropagation();
+            confirmDeleteCustomModule(mod);
+            return;
+          }
+          openModuleDetail(mod.id);
+        });
+
+        pmCardsGrid.appendChild(card);
+      });
+    }
+
+    function confirmDeleteCustomModule(mod) {
+      if (!mod || mod.isBuiltin) return;
+      const ok = window.confirm(`Hapus modul guru "${mod.title}" dari penyimpanan lokal perangkat ini?`);
+      if (!ok) return;
+      MashimurelayModules.deleteCustomModule(mod.id);
+      selectedTeacherTaskModuleIds.delete(mod.id);
+      updatePracticalModulesBadges();
+      renderTeacherTaskModulesPicker();
+      if (activeDetailModuleId === mod.id) {
+        showListView();
+      } else {
+        renderModulesGrid();
+      }
+      showToast(`Modul "${mod.title}" telah dihapus dari perangkat.`, true);
+    }
+
+    function showListView() {
+      activeDetailModuleId = null;
+      if (pmDetailView) pmDetailView.style.display = 'none';
+      if (pmListView) pmListView.style.display = 'flex';
+      renderModulesGrid();
+    }
+
+    function openModuleDetail(moduleId) {
+      const mod = MashimurelayModules.getModuleById(moduleId);
+      if (!mod || !pmDetailContent) return;
+      activeDetailModuleId = mod.id;
+
+      if (pmListView) pmListView.style.display = 'none';
+      if (pmDetailView) pmDetailView.style.display = 'flex';
+      if (pmDetailOwnerActions) {
+        pmDetailOwnerActions.style.display = mod.isBuiltin ? 'none' : 'flex';
+      }
+
+      const checkedSet = new Set(MashimurelayModules.getCheckedIndices(mod.id));
+      const comp = MashimurelayModules.getModuleCompletion(mod);
+      const badgeClass = !mod.isBuiltin
+        ? 'is-guru'
+        : (mod.track === 'otomotif' ? 'is-otomotif' : 'is-industri');
+      const badgeText = !mod.isBuiltin
+        ? 'Modul Mandiri Guru (Lokal)'
+        : (mod.track === 'otomotif' ? 'Track Otomotif (TKR/TSM)' : 'Track Industri (TITL/IML)');
+
+      const objectivesHtml = (mod.objectives && mod.objectives.length > 0)
+        ? `<ol class="pm-list">${mod.objectives.map(o => `<li>${escapeHtml(o)}</li>`).join('')}</ol>`
+        : '<div style="font-size: 12px; color: var(--text-muted);">Belum ada rincian tujuan pembelajaran.</div>';
+
+      const k3Html = (mod.safetyK3 && mod.safetyK3.length > 0)
+        ? `<ul class="pm-list">${mod.safetyK3.map(k => `<li>${escapeHtml(k)}</li>`).join('')}</ul>`
+        : '<div style="font-size: 12px; color: var(--text-muted);">Periksa isolasi sumber daya dan polaritas sebelum simulasi.</div>';
+
+      const pinTableHtml = (mod.pinTable && mod.pinTable.length > 0)
+        ? `
+          <table class="pm-pin-table">
+            <thead><tr><th>Terminal / Kode</th><th>Fungsi &amp; Keterangan</th></tr></thead>
+            <tbody>
+              ${mod.pinTable.map(p => `<tr><td class="pm-pin-code">${escapeHtml(p.code)}</td><td>${escapeHtml(p.desc)}</td></tr>`).join('')}
+            </tbody>
+          </table>
+        `
+        : '';
+
+      const bomHtml = (mod.allowedComponents && mod.allowedComponents.length > 0)
+        ? `<div class="pm-bom-chips">${mod.allowedComponents.map(k => `<span class="pm-bom-chip">${escapeHtml(getComponentDisplayName(k))}</span>`).join('')}</div>`
+        : '<div style="font-size: 12px; color: var(--text-muted);">Bebas menggunakan seluruh perpustakaan 117 komponen.</div>';
+
+      const stepsHtml = (mod.steps && mod.steps.length > 0)
+        ? `<ol class="pm-list">${mod.steps.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ol>`
+        : '<div style="font-size: 12px; color: var(--text-muted);">Rangkai komponen sesuai petunjuk guru di kelas.</div>';
+
+      const checksHtml = (mod.checks && mod.checks.length > 0)
+        ? `<div class="pm-check-list" id="pmDetailCheckList">
+            ${mod.checks.map((c, idx) => {
+              const isChk = checkedSet.has(idx);
+              return `
+                <label class="pm-check-item ${isChk ? 'is-checked' : ''}" data-idx="${idx}">
+                  <input type="checkbox" ${isChk ? 'checked' : ''} />
+                  <span>${escapeHtml(c)}</span>
+                </label>
+              `;
+            }).join('')}
+          </div>`
+        : '<div style="font-size: 12px; color: var(--text-muted);">Belum ada item ceklis pengujian.</div>';
+
+      pmDetailContent.innerHTML = `
+        <div class="pm-detail-hero">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span class="pm-track-badge ${badgeClass}">${escapeHtml(badgeText)}</span>
+              <span class="pm-card-code">${escapeHtml(mod.code || 'MOD')}</span>
+              <span class="pm-pill-mini" id="pmDetailCompletionPill">${comp.total > 0 ? `${comp.done}/${comp.total} Ceklis (${comp.percent}%)` : 'Siap Praktik'}</span>
+            </div>
+            <span style="font-size: 11px; color: var(--text-muted);">
+              ${escapeHtml(mod.subject || '')}${mod.author ? ` · ${escapeHtml(mod.author)}` : ''} · ${escapeHtml(mod.duration || '45 Menit')}
+            </span>
+          </div>
+          <h4 class="pm-detail-title">${escapeHtml(mod.title)}</h4>
+          <p class="pm-detail-sub">${escapeHtml(mod.summary || '')}</p>
+        </div>
+
+        <div class="pm-detail-grid">
+          <div class="pm-section-box">
+            <h5 class="pm-section-title">Tujuan Pembelajaran</h5>
+            ${objectivesHtml}
+          </div>
+          <div class="pm-section-box is-k3">
+            <h5 class="pm-section-title">Keselamatan Kerja (K3)</h5>
+            ${k3Html}
+          </div>
+        </div>
+
+        <div class="pm-section-box">
+          <h5 class="pm-section-title">Ringkasan Teori &amp; Kode Terminal (IEC / DIN)</h5>
+          <p class="pm-theory-text">${escapeHtml(mod.theory || 'Ikuti prinsip sambungan sesuai standar gambar teknik listrik.')}</p>
+          ${pinTableHtml}
+        </div>
+
+        <div class="pm-section-box">
+          <h5 class="pm-section-title">Daftar Komponen Praktikum (BOM — ${(mod.allowedComponents || []).length} Komponen)</h5>
+          ${bomHtml}
+        </div>
+
+        <div class="pm-detail-grid">
+          <div class="pm-section-box">
+            <h5 class="pm-section-title">Langkah Wiring Bertahap</h5>
+            ${stepsHtml}
+          </div>
+          <div class="pm-section-box">
+            <h5 class="pm-section-title">Ceklis Pengujian Mandiri</h5>
+            ${checksHtml}
+          </div>
+        </div>
+      `;
+
+      pmDetailContent.scrollTop = 0;
+
+      // Bind interactive checklist
+      const checkItems = pmDetailContent.querySelectorAll('.pm-check-item');
+      checkItems.forEach(item => {
+        const cb = item.querySelector('input[type="checkbox"]');
+        const idx = parseInt(item.getAttribute('data-idx'), 10);
+        if (cb && !isNaN(idx)) {
+          cb.addEventListener('change', () => {
+            MashimurelayModules.toggleCheck(mod.id, idx);
+            item.classList.toggle('is-checked', cb.checked);
+            const nextComp = MashimurelayModules.getModuleCompletion(mod);
+            const pill = document.getElementById('pmDetailCompletionPill');
+            if (pill) pill.textContent = `${nextComp.done}/${nextComp.total} Ceklis (${nextComp.percent}%)`;
+            updatePracticalModulesBadges();
+          });
+        }
+      });
+
+      // Configure action buttons
+      if (btnPmWatchVideo) {
+        if (mod.videoId) {
+          btnPmWatchVideo.style.display = 'inline-flex';
+          if (btnPmWatchVideoLabel) btnPmWatchVideoLabel.textContent = VIDEO_LABELS[mod.videoId] || 'Tonton Video Simulasi';
+        } else {
+          btnPmWatchVideo.style.display = 'none';
+        }
+      }
+
+      if (btnPmWatchVideoSecondary) {
+        if (mod.secondaryVideoId) {
+          btnPmWatchVideoSecondary.style.display = 'inline-flex';
+          if (btnPmWatchVideoSecondaryLabel) btnPmWatchVideoSecondaryLabel.textContent = VIDEO_LABELS[mod.secondaryVideoId] || 'Video Tambahan';
+        } else {
+          btnPmWatchVideoSecondary.style.display = 'none';
+        }
+      }
+
+      if (btnPmOpenExample) {
+        btnPmOpenExample.style.display = (mod.exampleCircuit && Array.isArray(mod.exampleCircuit.data) && mod.exampleCircuit.data.length > 0)
+          ? 'inline-flex'
+          : 'none';
+      }
+
+      if (btnPmStartPracticeLabel) {
+        const kitCnt = Array.isArray(mod.allowedComponents) ? mod.allowedComponents.length : 0;
+        btnPmStartPracticeLabel.textContent = kitCnt > 0 ? `Mulai Latihan (+ Kit ${kitCnt} Komp.)` : 'Mulai Latihan di Kanvas Baru';
+      }
+    }
+
+    function openPracticalModulesModal(initialTrack) {
+      if (initialTrack) {
+        activeTrackFilter = initialTrack;
+        document.querySelectorAll('.pm-filter-tab').forEach(t => {
+          t.classList.toggle('active', t.getAttribute('data-track') === activeTrackFilter);
+        });
+      }
+      showListView();
+      if (pmCardsGrid) pmCardsGrid.scrollTop = 0;
+      showModal(modalPracticalModules);
+    }
+
+    // Custom Module Editor Kit Grid Renderer
+    function renderCmeKitGrid(searchQuery = '') {
+      if (!cmeKitGrid || typeof COMPONENTS_DATA === 'undefined') return;
+      const q = (searchQuery || '').trim().toLowerCase();
+      cmeKitGrid.innerHTML = '';
+
+      const items = Object.keys(COMPONENTS_DATA)
+        .map(key => ({ key, comp: COMPONENTS_DATA[key], name: COMPONENTS_DATA[key].name || key }))
+        .filter(it => !q || it.name.toLowerCase().includes(q) || it.key.toLowerCase().includes(q));
+
+      const gridEl = document.createElement('div');
+      gridEl.className = 'kit-category-grid';
+
+      items.forEach(it => {
+        const isChecked = cmeSelectedComponents.has(it.key);
+        const card = document.createElement('label');
+        card.className = `kit-comp-tile ${isChecked ? 'is-selected' : ''}`;
+        card.title = `${it.name} (${it.key})`;
+
+        let iconHtml = '';
+        if (it.comp && it.comp.graphics) {
+          const vb = it.comp.viewBox || `0 0 ${it.comp.width || 120} ${it.comp.height || 120}`;
+          iconHtml = `<svg viewBox="${vb}" class="kit-comp-svg" aria-hidden="true">${it.comp.graphics}</svg>`;
+        } else {
+          iconHtml = `<img src="assets/icons/${it.key}.svg" alt="" class="kit-comp-img" loading="lazy" onerror="this.style.display='none'" />`;
+        }
+
+        card.innerHTML = `
+          <input type="checkbox" ${isChecked ? 'checked' : ''} />
+          <div class="kit-comp-icon-box">${iconHtml}</div>
+          <div class="kit-comp-info">
+            <div class="kit-comp-name">${escapeHtml(it.name)}</div>
+            <div class="kit-comp-sub"><span class="kit-comp-key-muted">${escapeHtml(it.key)}</span></div>
+          </div>
+        `;
+        const chk = card.querySelector('input[type="checkbox"]');
+        chk.addEventListener('change', (e) => {
+          if (e.target.checked) {
+            cmeSelectedComponents.add(it.key);
+            card.classList.add('is-selected');
+          } else {
+            cmeSelectedComponents.delete(it.key);
+            card.classList.remove('is-selected');
+          }
+          if (cmeKitCount) cmeKitCount.textContent = String(cmeSelectedComponents.size);
+        });
+        gridEl.appendChild(card);
+      });
+
+      if (items.length === 0) {
+        cmeKitGrid.innerHTML = `<div style="text-align: center; padding: 18px; color: var(--text-muted); font-size: 12px;">Komponen tidak ditemukan.</div>`;
+      } else {
+        cmeKitGrid.appendChild(gridEl);
+      }
+      if (cmeKitCount) cmeKitCount.textContent = String(cmeSelectedComponents.size);
+    }
+
+    function openCustomModuleEditorModal(existingMod = null, prefill = null) {
+      cmeExistingExampleCircuit = (existingMod && existingMod.exampleCircuit) ? existingMod.exampleCircuit : null;
+      const isEdit = Boolean(existingMod && existingMod.id);
+
+      if (customModuleEditorTitle) {
+        customModuleEditorTitle.textContent = isEdit ? 'EDIT MODUL MANDIRI GURU' : 'BUAT MODUL MANDIRI GURU';
+      }
+      if (cmeModuleId) cmeModuleId.value = isEdit ? existingMod.id : '';
+      if (cmeTitle) cmeTitle.value = isEdit ? (existingMod.title || '') : (prefill && prefill.title ? prefill.title : '');
+      if (cmeTrack) cmeTrack.value = isEdit ? (existingMod.track || 'industri') : 'industri';
+      if (cmeSubject) cmeSubject.value = isEdit ? (existingMod.subject || '') : (localStorage.getItem('mashimu_teacher_class') || '');
+      if (cmeAuthor) cmeAuthor.value = isEdit ? (existingMod.author || '') : (localStorage.getItem('mashimu_teacher_school') || 'Guru Pengampu');
+      if (cmeDuration) cmeDuration.value = isEdit ? (existingMod.duration || '45 Menit') : '45 Menit';
+      if (cmeSummary) cmeSummary.value = isEdit ? (existingMod.summary || '') : '';
+      if (cmeObjectives) cmeObjectives.value = isEdit ? (existingMod.objectives || []).join('\n') : '';
+      if (cmeSafety) cmeSafety.value = isEdit ? (existingMod.safetyK3 || []).join('\n') : '';
+      if (cmeTheory) cmeTheory.value = isEdit ? (existingMod.theory || '') : '';
+      if (cmeSteps) cmeSteps.value = isEdit ? (existingMod.steps || []).join('\n') : '';
+      if (cmeChecks) cmeChecks.value = isEdit ? (existingMod.checks || []).join('\n') : '';
+      if (cmeAttachCurrentCircuit) cmeAttachCurrentCircuit.checked = false;
+
+      if (isEdit && Array.isArray(existingMod.allowedComponents)) {
+        cmeSelectedComponents = new Set(existingMod.allowedComponents);
+      } else if (prefill && Array.isArray(prefill.allowedComponents)) {
+        cmeSelectedComponents = new Set(prefill.allowedComponents);
+      } else {
+        cmeSelectedComponents = new Set();
+      }
+
+      if (cmeKitSearch) cmeKitSearch.value = '';
+      renderCmeKitGrid('');
+      showModal(modalCustomModuleEditor);
+      setTimeout(() => { if (cmeTitle) cmeTitle.focus(); }, 100);
+    }
+    window.openCustomModuleEditorModal = openCustomModuleEditorModal;
+
+    // Bind navigation & buttons
+    if (drawerItemModules) {
+      drawerItemModules.addEventListener('click', () => {
+        closeNavDrawer();
+        openPracticalModulesModal();
+      });
+    }
+
+    if (btnDashOpenModules) {
+      btnDashOpenModules.addEventListener('click', () => {
+        closeDashboard();
+        openPracticalModulesModal();
+      });
+    }
+
+    if (btnClosePracticalModules) {
+      btnClosePracticalModules.addEventListener('click', () => hideModal(modalPracticalModules));
+    }
+
+    if (btnPmBackToList) {
+      btnPmBackToList.addEventListener('click', showListView);
+    }
+
+    if (btnOpenCustomModuleEditor) {
+      btnOpenCustomModuleEditor.addEventListener('click', () => {
+        cmeReturnToTaskSetup = false;
+        openCustomModuleEditorModal(null);
+      });
+    }
+
+    if (btnQuickCreateModuleFromTask) {
+      btnQuickCreateModuleFromTask.addEventListener('click', () => {
+        cmeReturnToTaskSetup = true;
+        openCustomModuleEditorModal(null);
+      });
+    }
+
+    if (btnPmEditCustom) {
+      btnPmEditCustom.addEventListener('click', () => {
+        const mod = MashimurelayModules.getModuleById(activeDetailModuleId);
+        if (mod && !mod.isBuiltin) {
+          cmeReturnToTaskSetup = false;
+          openCustomModuleEditorModal(mod);
+        }
+      });
+    }
+
+    if (btnPmDeleteCustom) {
+      btnPmDeleteCustom.addEventListener('click', () => {
+        const mod = MashimurelayModules.getModuleById(activeDetailModuleId);
+        if (mod && !mod.isBuiltin) confirmDeleteCustomModule(mod);
+      });
+    }
+
+    if (btnPmWatchVideo) {
+      btnPmWatchVideo.addEventListener('click', () => {
+        const mod = MashimurelayModules.getModuleById(activeDetailModuleId);
+        if (mod && mod.videoId) openVideoInInstructions(mod.videoId);
+      });
+    }
+
+    if (btnPmWatchVideoSecondary) {
+      btnPmWatchVideoSecondary.addEventListener('click', () => {
+        const mod = MashimurelayModules.getModuleById(activeDetailModuleId);
+        if (mod && mod.secondaryVideoId) openVideoInInstructions(mod.secondaryVideoId);
+      });
+    }
+
+    if (btnPmOpenExample) {
+      btnPmOpenExample.addEventListener('click', () => {
+        const mod = MashimurelayModules.getModuleById(activeDetailModuleId);
+        if (!mod || !mod.exampleCircuit) return;
+        const cloned = JSON.parse(JSON.stringify(mod.exampleCircuit));
+        const projName = `Contoh: ${mod.title}`;
+        if (projectManager) {
+          projectManager.createNewProject(projName, cloned);
+        } else if (canvas) {
+          canvas.loadCircuit(cloned);
+        }
+        hideModal(modalPracticalModules);
+        closeDashboard();
+        triggerCanvasFit();
+        showToast(`Contoh rangkaian "${mod.title}" dimuat. Tekan RUN untuk simulasi!`, true);
+      });
+    }
+
+    if (btnPmStartPractice) {
+      btnPmStartPractice.addEventListener('click', () => {
+        const mod = MashimurelayModules.getModuleById(activeDetailModuleId);
+        if (!mod) return;
+        const allowed = Array.isArray(mod.allowedComponents) ? mod.allowedComponents : [];
+        const blankCircuit = {
+          header: {
+            generator: 'Mashimurelay',
+            version: '1.0',
+            name: `Latihan: ${mod.title}`,
+            created_at: new Date().toISOString()
+          },
+          data: []
+        };
+        if (allowed.length > 0) {
+          blankCircuit.assignmentKit = {
+            enabled: true,
+            name: mod.title,
+            allowedComponents: allowed.slice()
+          };
+        }
+        if (projectManager) {
+          projectManager.createNewProject(`Latihan: ${mod.title}`, blankCircuit);
+        } else if (canvas) {
+          canvas.loadCircuit(blankCircuit);
+        }
+        if (canvas && allowed.length > 0 && typeof canvas.setAssignmentKit === 'function') {
+          canvas.setAssignmentKit({
+            enabled: true,
+            name: mod.title,
+            allowedComponents: allowed.slice()
+          });
+        }
+        hideModal(modalPracticalModules);
+        closeDashboard();
+        showToast(
+          allowed.length > 0
+            ? `Mode Latihan "${mod.title}" dimulai dengan Kit ${allowed.length} komponen!`
+            : `Kanvas latihan "${mod.title}" siap digunakan!`,
+          true
+        );
+      });
+    }
+
+    // Filter tabs & search
+    document.querySelectorAll('.pm-filter-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.pm-filter-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        activeTrackFilter = tab.getAttribute('data-track') || 'all';
+        renderModulesGrid();
+      });
+    });
+
+    if (pmSearchInput) {
+      pmSearchInput.addEventListener('input', (e) => {
+        activeSearchQuery = e.target.value || '';
+        renderModulesGrid();
+      });
+    }
+
+    // Editor controls
+    if (btnCloseCustomModuleEditor) {
+      btnCloseCustomModuleEditor.addEventListener('click', () => hideModal(modalCustomModuleEditor));
+    }
+    if (btnCancelCustomModuleEditor) {
+      btnCancelCustomModuleEditor.addEventListener('click', () => hideModal(modalCustomModuleEditor));
+    }
+    if (cmeKitSearch) {
+      cmeKitSearch.addEventListener('input', (e) => renderCmeKitGrid(e.target.value));
+    }
+    if (btnCmeCopyActiveKit) {
+      btnCmeCopyActiveKit.addEventListener('click', () => {
+        const curKit = (canvas && canvas.circuit && canvas.circuit.assignmentKit && Array.isArray(canvas.circuit.assignmentKit.allowedComponents))
+          ? canvas.circuit.assignmentKit.allowedComponents
+          : [];
+        if (curKit.length === 0) {
+          showToast('Belum ada Kit Praktikum aktif pada kanvas saat ini.', false);
+          return;
+        }
+        cmeSelectedComponents = new Set(curKit);
+        renderCmeKitGrid(cmeKitSearch ? cmeKitSearch.value : '');
+        showToast(`${curKit.length} komponen diambil dari Kit Aktif!`, true);
+      });
+    }
+    if (btnCmeClearKit) {
+      btnCmeClearKit.addEventListener('click', () => {
+        cmeSelectedComponents.clear();
+        renderCmeKitGrid(cmeKitSearch ? cmeKitSearch.value : '');
+      });
+    }
+
+    if (btnSaveCustomModule) {
+      btnSaveCustomModule.addEventListener('click', () => {
+        const title = cmeTitle ? cmeTitle.value.trim() : '';
+        if (!title) {
+          showToast('Judul Modul Praktikum wajib diisi.', false);
+          if (cmeTitle) cmeTitle.focus();
+          return;
+        }
+
+        const splitLines = (el) => (el && el.value ? el.value.split(/\r?\n/).map(s => s.trim()).filter(Boolean) : []);
+        const modPayload = {
+          id: (cmeModuleId && cmeModuleId.value.trim()) ? cmeModuleId.value.trim() : undefined,
+          title: title,
+          track: cmeTrack ? cmeTrack.value : 'industri',
+          subject: cmeSubject ? cmeSubject.value.trim() : 'Modul Mandiri Guru',
+          author: cmeAuthor ? cmeAuthor.value.trim() : 'Guru Pengampu',
+          duration: cmeDuration ? (cmeDuration.value.trim() || '45 Menit') : '45 Menit',
+          summary: cmeSummary ? cmeSummary.value.trim() : '',
+          objectives: splitLines(cmeObjectives),
+          safetyK3: splitLines(cmeSafety),
+          theory: cmeTheory ? cmeTheory.value.trim() : '',
+          steps: splitLines(cmeSteps),
+          checks: splitLines(cmeChecks),
+          allowedComponents: Array.from(cmeSelectedComponents)
+        };
+
+        if (cmeAttachCurrentCircuit && cmeAttachCurrentCircuit.checked && canvas && typeof canvas.getCircuitJson === 'function') {
+          const curJson = canvas.getCircuitJson();
+          if (curJson && Array.isArray(curJson.data) && curJson.data.length > 0) {
+            modPayload.exampleCircuit = JSON.parse(JSON.stringify(curJson));
+          }
+        } else if (cmeExistingExampleCircuit) {
+          modPayload.exampleCircuit = cmeExistingExampleCircuit;
+        }
+
+        const saved = MashimurelayModules.saveCustomModule(modPayload);
+        if (!saved) {
+          showToast('Gagal menyimpan modul mandiri.', false);
+          return;
+        }
+
+        hideModal(modalCustomModuleEditor);
+        updatePracticalModulesBadges();
+
+        if (cmeReturnToTaskSetup) {
+          selectedTeacherTaskModuleIds.add(saved.id);
+          renderTeacherTaskModulesPicker();
+          cmeReturnToTaskSetup = false;
+        } else {
+          if (modalPracticalModules && modalPracticalModules.style.display !== 'none') {
+            if (activeDetailModuleId === saved.id) {
+              openModuleDetail(saved.id);
+            } else {
+              activeTrackFilter = 'guru';
+              document.querySelectorAll('.pm-filter-tab').forEach(t => {
+                t.classList.toggle('active', t.getAttribute('data-track') === 'guru');
+              });
+              showListView();
+            }
+          } else {
+            openPracticalModulesModal('guru');
+          }
+        }
+
+        showToast(`Modul Mandiri "${saved.title}" berhasil disimpan!`, true);
+      });
+    }
+
+    updatePracticalModulesBadges();
+  })();
 
   // =========================================================================
   // Security Guard (Anti-DevTools, Anti-Ctrl+U, Anti-Native Context Menu)
