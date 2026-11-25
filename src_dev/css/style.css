@@ -8188,12 +8188,19 @@ html[data-theme="light"] .drawer-item-badge {
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 5px 10px;
+  padding: 6px 11px;
   border-radius: 7px;
   background: var(--bg-dark);
   border: 1px solid var(--border-color);
   color: var(--text-muted);
-  min-width: 220px;
+  min-width: 280px;
+  width: 280px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.pm-search-wrap svg {
+  flex-shrink: 0;
 }
 
 .pm-search-wrap input {
@@ -8203,6 +8210,7 @@ html[data-theme="light"] .drawer-item-badge {
   color: var(--text-primary);
   font-size: 12px;
   width: 100%;
+  min-width: 0;
 }
 
 .pm-cards-grid {
@@ -8213,7 +8221,7 @@ html[data-theme="light"] .drawer-item-badge {
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 12px;
   align-content: start;
-  padding-right: 4px;
+  padding: 4px 4px 10px 2px;
 }
 
 .pm-card {
@@ -8572,24 +8580,19 @@ html[data-theme="light"] .drawer-item-badge {
   font-weight: 600;
 }
 
-.pm-btn-video {
-  background: rgba(139, 92, 246, 0.16);
-  border: 1px solid rgba(139, 92, 246, 0.45);
-  color: #c4b5fd;
-}
-
-.pm-btn-video:hover {
-  background: rgba(139, 92, 246, 0.28);
-}
-
+.pm-btn-video,
 .pm-btn-example {
-  background: rgba(14, 165, 233, 0.16);
-  border: 1px solid rgba(56, 189, 248, 0.45);
-  color: #7dd3fc;
+  background: rgba(148, 163, 184, 0.10);
+  border: 1px solid rgba(148, 163, 184, 0.36);
+  color: var(--text-primary);
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
+.pm-btn-video:hover,
 .pm-btn-example:hover {
-  background: rgba(14, 165, 233, 0.28);
+  background: rgba(59, 130, 246, 0.16);
+  border-color: var(--accent-primary);
+  color: #ffffff;
 }
 
 /* Custom Module Editor */
@@ -8813,15 +8816,17 @@ html[data-theme="light"] .pm-btn-danger {
   border-color: #fca5a5;
 }
 
-html[data-theme="light"] .pm-btn-video {
-  background: #f5f3ff;
-  border-color: #c4b5fd;
-  color: #6d28d9;
+html[data-theme="light"] .pm-btn-video,
+html[data-theme="light"] .pm-btn-example {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #1e293b;
 }
 
-html[data-theme="light"] .pm-btn-example {
+html[data-theme="light"] .pm-btn-video:hover,
+html[data-theme="light"] .pm-btn-example:hover {
   background: #eff6ff;
-  border-color: #93c5fd;
+  border-color: #2563eb;
   color: #1d4ed8;
 }
 

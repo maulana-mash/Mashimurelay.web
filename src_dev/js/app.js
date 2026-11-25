@@ -6157,7 +6157,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const teacherTabCount = document.getElementById('pmTeacherTabCount');
 
     if (drawerBadge) drawerBadge.textContent = String(stats.totalModules);
-    const pillText = `${stats.builtinCompleted} / ${stats.builtinTotal} Selesai${stats.customTotal > 0 ? ` · +${stats.customTotal} Guru` : ''}`;
+    const pillText = `${stats.builtinTotal} Modul${stats.customTotal > 0 ? ` · +${stats.customTotal} Guru` : ''}`;
     if (dashPill) dashPill.textContent = pillText;
     if (headerPill) headerPill.textContent = pillText;
     if (teacherTabCount) teacherTabCount.textContent = String(stats.customTotal);
@@ -6360,9 +6360,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       pmCardsGrid.innerHTML = '';
       filtered.forEach(mod => {
-        const comp = MashimurelayModules.getModuleCompletion(mod);
         const card = document.createElement('div');
-        card.className = `pm-card ${comp.completed ? 'is-completed' : ''}`;
+        card.className = 'pm-card';
 
         const badgeClass = !mod.isBuiltin
           ? 'is-guru'
@@ -6372,9 +6371,7 @@ document.addEventListener('DOMContentLoaded', () => {
           : (mod.track === 'otomotif' ? 'Otomotif · TKR/TSM' : 'Industri · TITL');
 
         const kitCount = Array.isArray(mod.allowedComponents) ? mod.allowedComponents.length : 0;
-        const progressLabel = comp.total > 0
-          ? (comp.completed ? `Selesai (${comp.done}/${comp.total})` : `Ceklis ${comp.done}/${comp.total}`)
-          : 'Siap Dipelajari';
+        const footerHint = !mod.isBuiltin ? 'Modul Mandiri Guru' : 'Panduan Praktikum';
 
         card.innerHTML = `
           <div style="display: flex; flex-direction: column; gap: 7px;">
@@ -6393,7 +6390,7 @@ document.addEventListener('DOMContentLoaded', () => {
               ${kitCount > 0 ? `<span>·</span><span>Kit ${kitCount} komp.</span>` : ''}
             </div>
             <div class="pm-card-footer">
-              <span class="pm-progress-chip ${comp.completed ? 'is-done' : ''}">${escapeHtml(progressLabel)}</span>
+              <span class="pm-progress-chip">${escapeHtml(footerHint)}</span>
               <div class="pm-card-actions">
                 ${!mod.isBuiltin ? `
                   <button type="button" class="pm-card-mini-btn btn-card-edit-mod" data-id="${escapeHtml(mod.id)}">Edit</button>
@@ -6456,8 +6453,6 @@ document.addEventListener('DOMContentLoaded', () => {
         pmDetailOwnerActions.style.display = mod.isBuiltin ? 'none' : 'flex';
       }
 
-      const checkedSet = new Set(MashimurelayModules.getCheckedIndices(mod.id));
-      const comp = MashimurelayModules.getModuleCompletion(mod);
       const badgeClass = !mod.isBuiltin
         ? 'is-guru'
         : (mod.track === 'otomotif' ? 'is-otomotif' : 'is-industri');
@@ -6493,18 +6488,8 @@ document.addEventListener('DOMContentLoaded', () => {
         : '<div style="font-size: 12px; color: var(--text-muted);">Rangkai komponen sesuai petunjuk guru di kelas.</div>';
 
       const checksHtml = (mod.checks && mod.checks.length > 0)
-        ? `<div class="pm-check-list" id="pmDetailCheckList">
-            ${mod.checks.map((c, idx) => {
-              const isChk = checkedSet.has(idx);
-              return `
-                <label class="pm-check-item ${isChk ? 'is-checked' : ''}" data-idx="${idx}">
-                  <input type="checkbox" ${isChk ? 'checked' : ''} />
-                  <span>${escapeHtml(c)}</span>
-                </label>
-              `;
-            }).join('')}
-          </div>`
-        : '<div style="font-size: 12px; color: var(--text-muted);">Belum ada item ceklis pengujian.</div>';
+        ? `<ul class="pm-list">${mod.checks.map(c => `<li>${escapeHtml(c)}</li>`).join('')}</ul>`
+        : '<div style="font-size: 12px; color: var(--text-muted);">Uji rangkaian dengan menekan tombol RUN dan mengamati indikator kerja.</div>';
 
       pmDetailContent.innerHTML = `
         <div class="pm-detail-hero">
@@ -6512,7 +6497,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
               <span class="pm-track-badge ${badgeClass}">${escapeHtml(badgeText)}</span>
               <span class="pm-card-code">${escapeHtml(mod.code || 'MOD')}</span>
-              <span class="pm-pill-mini" id="pmDetailCompletionPill">${comp.total > 0 ? `${comp.done}/${comp.total} Ceklis (${comp.percent}%)` : 'Siap Praktik'}</span>
+              <span class="pm-pill-mini">${escapeHtml(mod.level || 'Mandiri')}</span>
             </div>
             <span style="font-size: 11px; color: var(--text-muted);">
               ${escapeHtml(mod.subject || '')}${mod.author ? ` · ${escapeHtml(mod.author)}` : ''} · ${escapeHtml(mod.duration || '45 Menit')}
@@ -6550,30 +6535,13 @@ document.addEventListener('DOMContentLoaded', () => {
             ${stepsHtml}
           </div>
           <div class="pm-section-box">
-            <h5 class="pm-section-title">Ceklis Pengujian Mandiri</h5>
+            <h5 class="pm-section-title">Panduan Pengujian Mandiri</h5>
             ${checksHtml}
           </div>
         </div>
       `;
 
       pmDetailContent.scrollTop = 0;
-
-      // Bind interactive checklist
-      const checkItems = pmDetailContent.querySelectorAll('.pm-check-item');
-      checkItems.forEach(item => {
-        const cb = item.querySelector('input[type="checkbox"]');
-        const idx = parseInt(item.getAttribute('data-idx'), 10);
-        if (cb && !isNaN(idx)) {
-          cb.addEventListener('change', () => {
-            MashimurelayModules.toggleCheck(mod.id, idx);
-            item.classList.toggle('is-checked', cb.checked);
-            const nextComp = MashimurelayModules.getModuleCompletion(mod);
-            const pill = document.getElementById('pmDetailCompletionPill');
-            if (pill) pill.textContent = `${nextComp.done}/${nextComp.total} Ceklis (${nextComp.percent}%)`;
-            updatePracticalModulesBadges();
-          });
-        }
-      });
 
       // Configure action buttons
       if (btnPmWatchVideo) {
